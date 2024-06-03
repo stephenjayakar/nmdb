@@ -2,13 +2,16 @@ from datetime import datetime, timedelta
 import re
 
 class Message:
-    def __init__(self, sender: str, message: str, timestamp: str):
+    def __init__(self, sender: str, message: str, timestamp: datetime):
         self.sender = sender
         self.message = message
         self.timestamp = timestamp
 
     def __repr__(self):
         return f'{self.timestamp} {self.sender}: {self.message}'
+
+    def is_complete(self):
+        return self.sender != None and self.message != None and self.timestamp != None
 
 
 def get_senders() -> {}:
@@ -45,12 +48,51 @@ def parse_txt(all_messages: str) -> list:
     # 2 = LF TEXT, IGNORING TABBED
     # two spaces and then a date means back to 0
     state = 0
-    sender = None
-    message = None
+    # TODO: maybe abstract as `message_to_append`
+    message_to_append = None
+    # TODO: im not sure the best way to implement this state
+    # machine. Think about it a bit.
     for line in all_messages.split('\n'):
+        print(state, line)
+        # State 2 can transition to 0, but we want to stay on the
+        # line. Maybe abstract if there are multiple cases
         dt = try_parse_timestamp(line)
         if dt:
-            messages.append(Message("Unknown", "Something", dt))
+            if state == 1:
+                raise Exception("should not have a dt here")
+
+            if state == 2:
+                # finish the previous message
+                if not message_to_append.is_complete():
+                    raise Exception(f"message is missing fields: {message_to_append}")
+                messages.append(message_to_append)
+                message_to_append = None
+                state = 0
+            # TODO: this is so sus control flow........
+            if state == 0:
+                message_to_append = Message(None, '', dt)
+                state = 1
+                continue
+        if state == 0:
+            raise Exception(f"was expecting a dt. line printed:\n{line}")
+        elif state == 1:
+            sender = senders[line]
+            message_to_append.sender = sender
+            state = 2
+        elif state == 2:
+            if len(line) == 0 or line[0] == ' ':
+                continue
+            to_add = line
+            if len(message_to_append.message) != 0:
+                to_add = '\n' + line
+            message_to_append.message += to_add
+        else:
+            raise Exception(f"state value {state} is not between 0 and 2")
+    if state == 2 and message_to_append:
+        print('last message')
+        if not message_to_append.is_complete():
+            raise Exception(f'last message not complete\n{message_to_append}')
+        messages.append(message_to_append)
     return messages
 
 
