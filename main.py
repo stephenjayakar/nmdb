@@ -24,7 +24,7 @@ def get_senders() -> {}:
     return senders
 
 
-timestamp_regex = r'\w+ \d+, \d+  \d+:\d\d:\d\d (AM|PM)'
+timestamp_regex = r'\w+ \d+, \d+\s+\d+:\d\d:\d\d (AM|PM)'
 
 
 def try_parse_timestamp(line) -> datetime:
@@ -38,8 +38,16 @@ def try_parse_timestamp(line) -> datetime:
         return None
 
 
+url_regex = r'https?://(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
+
+
+def try_parse_url(message):
+    m = re.search(url_regex, message)
+    if m:
+        return m.group(0)
+
+
 def parse_txt(all_messages: str) -> list:
-    # TODO: kind of clowny
     senders = get_senders()
 
     messages = []
@@ -53,7 +61,6 @@ def parse_txt(all_messages: str) -> list:
     # TODO: im not sure the best way to implement this state
     # machine. Think about it a bit.
     for line in all_messages.split('\n'):
-        print(state, line)
         # State 2 can transition to 0, but we want to stay on the
         # line. Maybe abstract if there are multiple cases
         dt = try_parse_timestamp(line)
@@ -89,15 +96,43 @@ def parse_txt(all_messages: str) -> list:
         else:
             raise Exception(f"state value {state} is not between 0 and 2")
     if state == 2 and message_to_append:
-        print('last message')
         if not message_to_append.is_complete():
             raise Exception(f'last message not complete\n{message_to_append}')
         messages.append(message_to_append)
+
+    # message post-processing
+    for message in messages:
+        did_something = False
+        old_message = message.message
+        # remove reactions
+        if 'Reactions:' in message.message:
+            message.message = message.message.split('Reactions:')[0]
+            did_something = True
+
+        # remove link expansion
+        possible_url = try_parse_url(message.message)
+        if possible_url:
+            message.message = possible_url
+            did_something = True
+
+        # remove files?
+        if message.message.startswith('/Users/'):
+            message.message = "<sent file>"
+            did_something = True
+        message.message = message.message.strip()
+        if did_something:
+            print(f'post_processing did something!\nold message: {old_message}\nnew message: {message.message}\n')
     return messages
+
+
+def find_message(messages, query):
+    for message in messages:
+        if query in message.message:
+            print(message)
 
 
 with open('data_sources/2.txt', 'r') as text_file:
     text = text_file.read()
 messages = parse_txt(text)
-for message in messages:
-    print(message)
+# for message in messages:
+#     print(message)
