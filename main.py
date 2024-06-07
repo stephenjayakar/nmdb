@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta
+import hashlib
 import re
+import base64
+import json
 
 class Message:
     def __init__(self, sender: str, message: str, timestamp: datetime):
@@ -12,6 +15,22 @@ class Message:
 
     def is_complete(self):
         return self.sender != None and self.message != None and self.timestamp != None
+
+    def hash(self):
+        if not self.is_complete():
+            raise Exception("can't hash an incomplete message")
+        return hashlib.md5(self.__repr__().encode()).digest()
+
+    # Dict that's used for JSON serialization
+    def to_dict(self):
+        b64_hash = base64.b64encode(self.hash()).decode()
+
+        return {
+            "id": b64_hash,
+            "message": self.message,
+            "sender": self.sender,
+            "timestamp": str(self.timestamp),
+        }
 
 
 def get_senders() -> {}:
@@ -100,6 +119,7 @@ def parse_txt(all_messages: str) -> list:
             raise Exception(f'last message not complete\n{message_to_append}')
         messages.append(message_to_append)
 
+    ret_messages = []
     # message post-processing
     for message in messages:
         did_something = False
@@ -120,9 +140,14 @@ def parse_txt(all_messages: str) -> list:
             message.message = "<sent file>"
             did_something = True
         message.message = message.message.strip()
+        if not message.message == 'This message responded to an earlier message.':
+            # remove message case (inverse)
+            ret_messages.append(message)
         if did_something:
+            # TODO: make it so this is dumped into a file
             print(f'post_processing did something!\nold message: {old_message}\nnew message: {message.message}\n')
-    return messages
+
+    return ret_messages
 
 
 def find_message(messages, query):
@@ -131,8 +156,17 @@ def find_message(messages, query):
             print(message)
 
 
+def write_to_json(messages):
+    json_dict = {
+        "messages": [m.to_dict() for m in messages],
+    }
+    with open('output/2.json', 'w') as json_file:
+        json_file.write(json.dumps(json_dict))
+
+
 with open('data_sources/2.txt', 'r') as text_file:
     text = text_file.read()
 messages = parse_txt(text)
+write_to_json(messages)
 # for message in messages:
 #     print(message)
