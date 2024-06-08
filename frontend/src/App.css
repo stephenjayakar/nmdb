@@ -32,7 +32,8 @@ input[type="text"] {
   margin: 8px 0;
   padding: 12px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow-wrap: break-word; /* Allows the text to wrap and prevents it from overflowing the container */
 }
 
 .message-sender {
@@ -41,6 +42,7 @@ input[type="text"] {
 
 .message-content {
   margin-top: 4px;
+  word-break: break-word; /* Ensures long words like URLs break and wrap to the next line */
 }
 
 .message-timestamp {
@@ -48,6 +50,7 @@ input[type="text"] {
   text-align: right;
   margin-top: 8px;
   color: #707070;
+  white-space: nowrap; /* Ensures timestamps don't wrap, which is generally desired for small, concise text like dates */
 }
 
 @media (max-width: 600px) {

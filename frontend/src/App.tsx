@@ -31,7 +31,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
-  const messages = useQuery(api.messages.search, { searchTerm });
+  const messages = useQuery(api.messages.fasterSearch, { searchTerm });
 
   return (
     <div className="App">
