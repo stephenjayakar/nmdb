@@ -140,6 +140,11 @@ def parse_txt(all_messages: str) -> list:
             message.message = "<sent file>"
             did_something = True
         message.message = message.message.strip()
+
+        if '\nThis message responded to an earlier message.' in message.message:
+            did_something = True
+            message.message = message.message.replace('\nThis message responded to an earlier message.', '')
+
         if not message.message == 'This message responded to an earlier message.':
             # remove message case (inverse)
             ret_messages.append(message)
