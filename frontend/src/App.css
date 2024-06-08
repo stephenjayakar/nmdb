@@ -1,6 +1,30 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.search-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
 .message-list {
+  width: 100%;
+  max-width: 600px;
   list-style-type: none;
   padding: 0;
+  margin-top: 20px;
 }
 
 .message {
@@ -8,7 +32,7 @@
   margin: 8px 0;
   padding: 12px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .message-sender {
@@ -26,11 +50,12 @@
   color: #707070;
 }
 
-.view-context-link {
-  background: none;
-  border: none;
-  color: blue;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
+@media (max-width: 600px) {
+  .search-container {
+    width: 90%;
+  }
+
+  .message-list, .message {
+    width: 90%;
+  }
 }
