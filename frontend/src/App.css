@@ -1,0 +1,36 @@
+.message-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.message {
+  background-color: #f0f0f0;
+  margin: 8px 0;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.message-sender {
+  font-weight: bold;
+}
+
+.message-content {
+  margin-top: 4px;
+}
+
+.message-timestamp {
+  font-size: 0.8rem;
+  text-align: right;
+  margin-top: 8px;
+  color: #707070;
+}
+
+.view-context-link {
+  background: none;
+  border: none;
+  color: blue;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
