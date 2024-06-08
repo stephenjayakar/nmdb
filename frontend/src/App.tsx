@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
 
 import { useQuery } from "convex/react";
 import { api } from "./convex/_generated/api";
-
 
 export interface Message {
   id: string;
@@ -31,16 +30,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
 };
 
 function App() {
-  const messages = useQuery(api.messages.get);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredMessages, setFilteredMessages] = useState<any>(messages);
-
-  useEffect(() => {
-    const results = messages?.filter((msg) =>
-      msg.message.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredMessages(results);
-  }, [searchTerm]);  // Correct use of searchTerm as the dependency for useEffect
+  const [searchTerm, setSearchTerm] = useState("");
+  const messages = useQuery(api.messages.search, { searchTerm });
 
   return (
     <div className="App">
@@ -51,7 +42,7 @@ function App() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <MessageList messages={filteredMessages} />
+        <MessageList messages={messages as Message[]} />
       </header>
     </div>
   );
