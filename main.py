@@ -3,6 +3,12 @@ import hashlib
 import re
 import base64
 import json
+import sys
+
+file_prefix = '2'
+if len(sys.argv) > 1:
+    file_prefix = sys.argv[1]
+
 
 class Message:
     def __init__(self, sender: str, message: str, timestamp: datetime):
@@ -165,11 +171,11 @@ def write_to_json(messages):
     json_dict = {
         "messages": [m.to_dict() for m in messages],
     }
-    with open('output/2.json', 'w') as json_file:
+    with open(f'output/{file_prefix}.json', 'w') as json_file:
         json_file.write(json.dumps(json_dict))
 
 
-with open('data_sources/2.txt', 'r') as text_file:
+with open(f'data_sources/{file_prefix}.txt', 'r') as text_file:
     text = text_file.read()
 messages = parse_txt(text)
 write_to_json(messages)

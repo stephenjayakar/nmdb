@@ -7,7 +7,9 @@ export default defineSchema({
     message: v.string(),
     sender: v.string(),
     timestamp: v.string(),
-  }).searchIndex("search_message", {
-    searchField: "message",
-  }),
+  })
+    .searchIndex("search_message", {
+      searchField: "message",
+    })
+    .index("by_timestamp", ["timestamp"]),
 });
