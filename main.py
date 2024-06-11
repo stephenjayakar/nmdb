@@ -158,6 +158,7 @@ def parse_txt(all_messages: str) -> list:
             # TODO: make it so this is dumped into a file
             print(f'post_processing did something!\nold message: {old_message}\nnew message: {message.message}\n')
 
+    ret_messages.sort(key=lambda m: m.timestamp)
     return ret_messages
 
 
@@ -168,11 +169,11 @@ def find_message(messages, query):
 
 
 def write_to_json(messages):
-    json_dict = {
-        "messages": [m.to_dict() for m in messages],
-    }
+    # json_dict = {
+    #     "messages": [m.to_dict() for m in messages],
+    # }
     with open(f'output/{file_prefix}.json', 'w') as json_file:
-        json_file.write(json.dumps(json_dict))
+        json_file.write(json.dumps([m.to_dict() for m in messages]))
 
 
 with open(f'data_sources/{file_prefix}.txt', 'r') as text_file:
