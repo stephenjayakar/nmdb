@@ -4,8 +4,17 @@ import { v } from "convex/values";
 const N = 1024;
 
 export const fasterSearch = query({
-  args: { searchTerm: v.string() },
+  args: {
+    token: v.string(),
+    searchTerm: v.string(),
+  },
   handler: async (ctx, args) => {
+    // TODO: maybe move authentication somewhere else.
+    const tokenExists = await ctx.db.query("sessions").filter((q) => q.eq(q.field("token"), args.token)).first() != null
+    if (!tokenExists) {
+      return []
+    }
+
     let messages = [];
     if (args.searchTerm == "") {
       messages = await ctx.db.query("messages").take(N);

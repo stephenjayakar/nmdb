@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
 
-import { useQuery } from 'convex/react';
-import { api } from './convex/_generated/api';
+import { useQuery } from "convex/react";
+import { api } from "./convex/_generated/api";
 
 export interface Message {
   id: string;
@@ -29,9 +29,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
   );
 };
 
-function App() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const messages = useQuery(api.messages.fasterSearch, { searchTerm });
+                             const MessagePage = ({ token }:any) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const messages = useQuery(api.messages.fasterSearch, { token, searchTerm });
 
   return (
     <div className="App">
@@ -46,6 +46,27 @@ function App() {
         </div>
         <MessageList messages={messages as Message[]} />
       </header>
+    </div>
+  );
+}
+
+function App() {
+  const [token, setToken] = useState("");
+  const [inputValue, setInputValue] = useState("");
+
+  const submitToken = () => {
+    setToken(inputValue);
+  };
+
+  return token ? (
+    <MessagePage token={token} />
+  ) : (
+    <div>
+      <input
+        value={inputValue} // Controlled input
+        onChange={(e) => setInputValue(e.target.value)} // Update inputValue on every keystroke
+      />
+      <button onClick={submitToken}>Submit</button>
     </div>
   );
 }

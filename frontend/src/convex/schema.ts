@@ -12,4 +12,7 @@ export default defineSchema({
       searchField: "message",
     })
     .index("by_timestamp", ["timestamp"]),
+  sessions: defineTable({
+    token: v.string(),
+  }),
 });
