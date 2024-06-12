@@ -40,7 +40,7 @@ class Message:
 
 
 def get_senders() -> {}:
-    with open('data_sources/senders.csv', 'r') as senders_file:
+    with open('../data_sources/senders.csv', 'r') as senders_file:
         senders_contents = senders_file.read()
     senders = {}
     for sender_line in senders_contents.split('\n'):
@@ -172,13 +172,12 @@ def write_to_json(messages):
     # json_dict = {
     #     "messages": [m.to_dict() for m in messages],
     # }
-    with open(f'output/{file_prefix}.json', 'w') as json_file:
+    with open(f'../output/{file_prefix}.json', 'w') as json_file:
         json_file.write(json.dumps([m.to_dict() for m in messages]))
 
 
-with open(f'data_sources/{file_prefix}.txt', 'r') as text_file:
-    text = text_file.read()
-messages = parse_txt(text)
-write_to_json(messages)
-# for message in messages:
-#     print(message)
+if __name__ == '__main__':
+    with open(f'../data_sources/{file_prefix}.txt', 'r') as text_file:
+        text = text_file.read()
+    messages = parse_txt(text)
+    write_to_json(messages)
