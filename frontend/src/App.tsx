@@ -15,23 +15,24 @@ interface MessageListProps {
   messages: Message[];
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages }) => {
-  return (
-    <div className="message-list">
-      {messages?.map((msg) => (
-        <div key={msg.id} className="message">
-          <div className="message-sender">{msg.sender}</div>
-          <div className="message-content">{msg.message}</div>
-          <div className="message-timestamp">{msg.timestamp}</div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
 const MessagePage = ({ token }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const messages = useQuery(api.messages.fasterSearch, { token, searchTerm });
+  const [rangeQuery, setRangeQuery] = useState("");
+
+  let messages = [];
+  const searchResult = useQuery(api.messages.fasterSearch, { token, searchTerm })
+  const aroundResult = useQuery(api.messages.getMessagesAroundDate, { token, timestamp: rangeQuery })
+  if (!rangeQuery) {
+    messages = searchResult || [];
+  } else {
+    messages = aroundResult || [];
+  }
+
+  const handleTimestampClick = (timestamp: string) => {
+    // TODO: we could probably abstract the "one or other" part of this better.
+    setSearchTerm("");
+    setRangeQuery(timestamp);
+  };
 
   return (
     <div className="App">
@@ -41,10 +42,32 @@ const MessagePage = ({ token }: any) => {
             type="text"
             placeholder="Search Messages..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setRangeQuery("");
+              setSearchTerm(e.target.value);
+            }}
           />
         </div>
-        <MessageList messages={messages as Message[]} />
+        <div className="message-list">
+          {messages?.map((msg) => (
+            <div key={msg.id} className="message">
+              <div className="message-sender">{msg.sender}</div>
+              <div className="message-content">{msg.message}</div>
+              <div className="message-timestamp">
+                <a
+                  className="message-timestamp"
+                  href=""
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleTimestampClick(msg.timestamp);
+                  }}
+                >
+                  {msg.timestamp}
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
       </header>
     </div>
   );
