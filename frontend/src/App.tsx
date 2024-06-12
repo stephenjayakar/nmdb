@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 
 import { useQuery } from "convex/react";
@@ -29,7 +29,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
   );
 };
 
-                             const MessagePage = ({ token }:any) => {
+const MessagePage = ({ token }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
   const messages = useQuery(api.messages.fasterSearch, { token, searchTerm });
 
@@ -48,18 +48,34 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
       </header>
     </div>
   );
-}
+};
 
 function App() {
   const [token, setToken] = useState("");
   const [inputValue, setInputValue] = useState("");
 
+  useEffect(() => {
+    const savedToken = localStorage.getItem("token");
+    if (savedToken) {
+      setToken(savedToken);
+    }
+  }, []);
+
   const submitToken = () => {
     setToken(inputValue);
+    localStorage.setItem("token", inputValue);
+  };
+
+  const clearLocalStorage = () => {
+    localStorage.removeItem("token");
+    setToken("");
   };
 
   return token ? (
-    <MessagePage token={token} />
+    <div>
+      <button onClick={clearLocalStorage}>Logout</button>
+      <MessagePage token={token} />
+    </div>
   ) : (
     <div>
       <input
