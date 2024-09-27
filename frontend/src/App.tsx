@@ -18,6 +18,7 @@ interface MessageListProps {
 const MessagePage = ({ token }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [rangeQuery, setRangeQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
 
   let messages = [];
   const searchResult = useQuery(api.messages.fasterSearch, { token, searchTerm })
@@ -32,6 +33,7 @@ const MessagePage = ({ token }: any) => {
     // TODO: we could probably abstract the "one or other" part of this better.
     setSearchTerm("");
     setRangeQuery(timestamp);
+    setSelectedDate(timestamp.split("T")[0]); // Set the date picker to the selected timestamp
   };
 
   return (
@@ -46,6 +48,15 @@ const MessagePage = ({ token }: any) => {
               setRangeQuery("");
               setSearchTerm(e.target.value);
             }}
+          />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              setSelectedDate(e.target.value);
+              setRangeQuery(e.target.value);
+            }}
+            className="date-picker"
           />
         </div>
         <div className="message-list">
