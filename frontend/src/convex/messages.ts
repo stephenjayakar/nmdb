@@ -3,18 +3,23 @@ import { v } from "convex/values";
 
 const N = 1024;
 
+const authCheck = async (ctx: any, token: string) => {
+    const tokenExists =
+      (await ctx.db
+        .query("sessions")
+       .filter((q: any) => q.eq(q.field("token"), token))
+        .first()) != null;
+    if (!tokenExists) {
+      return [];
+    }
+};
+
 export const timelineBounds = query({
   args: {
     token: v.string()
   },
   handler: async (ctx, args) => {
-    // TODO: maybe move authentication somewhere else.
-    const tokenExists =
-      (await ctx.db
-        .query("sessions")
-        .filter((q) => q.eq(q.field("token"), args.token))
-        .first()) != null;
-    if (!tokenExists) {
+    if (!authCheck(ctx, args.token)) {
       return [];
     }
 
@@ -39,13 +44,7 @@ export const fasterSearch = query({
     searchTerm: v.string(),
   },
   handler: async (ctx, args) => {
-    // TODO: maybe move authentication somewhere else.
-    const tokenExists =
-      (await ctx.db
-        .query("sessions")
-        .filter((q) => q.eq(q.field("token"), args.token))
-        .first()) != null;
-    if (!tokenExists) {
+    if (!authCheck(ctx, args.token)) {
       return [];
     }
 
@@ -71,10 +70,9 @@ export const getMessagesAroundDate = query({
     direction: v.string(),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.db.query("sessions")
-      .filter((q) => q.eq(q.field("token"), args.token))
-      .first();
-    if (!session) return [];
+    if (!authCheck(ctx, args.token)) {
+      return [];
+    }
 
     const limit = 20;
     let query = ctx.db.query("messages");
@@ -97,10 +95,9 @@ export const getInitialMessages = query({
     token: v.string(),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.db.query("sessions")
-      .filter((q) => q.eq(q.field("token"), args.token))
-      .first();
-    if (!session) return [];
+    if (!authCheck(ctx, args.token)) {
+      return [];
+    }
 
     const limit = 20;
     const messages = await ctx.db.query("messages").withIndex("by_timestamp").order('asc').take(limit)!;
@@ -114,10 +111,9 @@ export const reloadMessages = query({
     timestamp: v.string(),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.db.query("sessions")
-      .filter((q) => q.eq(q.field("token"), args.token))
-      .first();
-    if (!session) return [];
+    if (!authCheck(ctx, args.token)) {
+      return [];
+    }
     const limit = 20;
     const messages = await ctx.db.query("messages")
           .withIndex("by_timestamp", (q) => q.gte("timestamp", args.timestamp))
