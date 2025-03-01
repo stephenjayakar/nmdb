@@ -1,13 +1,13 @@
-from imessage import Message, get_senders
+from imessage_old import Message, get_senders
 
 import json
 import datetime
 
 content_map = {
-    'Ptt': '<sent voice message>',
-    'Video': '<sent video>',
-    'Image': '<sent image>',
-    'Sticker': '<sent sticker>',
+    'Ptt': '[sent voice message]',
+    'Video': '[sent video]',
+    'Image': '[sent image]',
+    'Sticker': '[sent sticker]',
 }
 
 

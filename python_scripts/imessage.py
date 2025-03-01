@@ -5,6 +5,7 @@ import hashlib
 import csv
 from datetime import datetime
 from typing import List, Dict
+import sys
 
 
 def hash_message(message_data: Dict) -> str:
@@ -42,7 +43,7 @@ def clean_message_content(content: str) -> str:
         filename = file_matches.group(1)
         content = re.sub(
             r"/Users/.*?\.\w+[\s\S]*?(?=\n\n|\n$|$)",
-            f"<sent file: {filename}>",
+            f"[sent file: {filename}]",
             content,
         )
 
@@ -69,13 +70,10 @@ def parse_messages(text_file: str, senders_map: Dict[str, str]) -> List[Dict]:
     matches = re.findall(pattern, content)
 
     messages = []
+    import pdb
     for raw_timestamp, sender, content in matches:
         # Skip indented/nested messages
-        if re.match(
-            r"^[ \t]",
-            content.strip().split("\n")[0] if content.strip() else "",
-            re.MULTILINE,
-        ):
+        if not content or content[0] == ' ':
             continue
 
         # Clean up the content
@@ -109,14 +107,15 @@ def parse_messages(text_file: str, senders_map: Dict[str, str]) -> List[Dict]:
 
 
 def main():
+    filename = sys.argv[1]
     # Load sender mappings
     senders_map = load_senders_map("../data_sources/senders.csv")
 
     # Parse messages from text file
-    messages = parse_messages("../data_sources/1.txt", senders_map)
+    messages = parse_messages(f"../data_sources/{filename}.txt", senders_map)
 
     # Write to JSON file
-    with open("../output/1.json", "w", encoding="utf-8") as f:
+    with open(f"../output/{filename}.json", "w", encoding="utf-8") as f:
         json.dump(messages, f, indent=2)
 
     print(f"Converted {len(messages)} messages to JSON format.")
