@@ -3,6 +3,7 @@ import re
 import base64
 import hashlib
 import csv
+from datetime import datetime
 from typing import List, Dict
 
 
@@ -68,7 +69,7 @@ def parse_messages(text_file: str, senders_map: Dict[str, str]) -> List[Dict]:
     matches = re.findall(pattern, content)
 
     messages = []
-    for timestamp, sender, content in matches:
+    for raw_timestamp, sender, content in matches:
         # Skip indented/nested messages
         if re.match(
             r"^[ \t]",
@@ -84,13 +85,17 @@ def parse_messages(text_file: str, senders_map: Dict[str, str]) -> List[Dict]:
         if not clean_content:
             continue
 
+        # Convert timestamp to ISO 8601 format
+        timestamp = datetime.strptime(raw_timestamp, "%b %d, %Y %I:%M:%S %p")
+        iso_timestamp = timestamp.isoformat()
+
         # Map sender to the actual handle
         actual_sender = senders_map.get(sender, sender)
 
         message_data = {
             "message": clean_content,
             "sender": actual_sender,
-            "timestamp": timestamp,
+            "timestamp": iso_timestamp,  # use the ISO formatted timestamp
         }
 
         # Create the hash and encode it in base64

@@ -136,6 +136,11 @@ const MessagePage = ({ token }) => {
 const MessageList = ({ messages, onTimestampClick }) => {
   if (!messages.length) return null;
 
+  const makeLinksClickable = (text) => {
+    const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[A-Z0-9+&@#\/%=~_|])/gi;
+    return text.replace(urlPattern, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+  };
+
   return (
     <div className="message-list">
       {messages.map((msg) => {
@@ -148,7 +153,9 @@ const MessageList = ({ messages, onTimestampClick }) => {
           >
             <Card.Body>
               <Card.Title className="text-primary">{msg.sender}</Card.Title>
-              <Card.Text>{msg.message}</Card.Text>
+              <Card.Text>
+                <span dangerouslySetInnerHTML={{ __html: makeLinksClickable(msg.message) }} />
+              </Card.Text>
               <Card.Footer className="text-end p-0 bg-transparent border-0">
                 <small className="text-muted">
                   <a
