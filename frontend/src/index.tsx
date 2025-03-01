@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const convex = new ConvexReactClient(process.env.REACT_APP_CONVEX_URL as string);
 

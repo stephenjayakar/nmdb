@@ -3,3 +3,4 @@ data_sources
 .log
 output
 .DS_Store
+.aider*

@@ -1,72 +1,298 @@
+:root {
+  --primary-color: #3498db;
+  --secondary-color: #e8f4fc;
+  --accent-color: #2980b9;
+  --background-color: #f9f9f9;
+  --text-color: #333;
+  --light-text-color: #707070;
+  --border-radius: 12px;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
 .App {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
+  min-height: 100vh;
 }
 
-.date-picker {
-  margin-left: 10px;
-  padding: 10px;
-  border: 2px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
+.app-container {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.content-area {
+  flex: 1;
+  max-width: 700px;
+}
+
+.App-header {
+  width: 100%;
+  max-width: 700px;
 }
 
 .search-container {
   width: 100%;
-  max-width: 600px;
-  margin: 20px auto;
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+  align-items: center;
 }
 
 input[type="text"] {
-  width: 100%;
-  padding: 10px;
-  border: 2px solid #ccc;
-  border-radius: 8px;
+  flex-grow: 1;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius);
   font-size: 1rem;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: var(--transition);
 }
 
-.message-list {
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+}
+
+.date-picker {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.date-picker:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.empty-state {
+  text-align: center;
+  margin-top: 40px;
+  color: var(--light-text-color);
+}
+
+.auth-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 20px;
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.auth-title {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  color: var(--primary-color);
+}
+
+.auth-form {
   width: 100%;
-  max-width: 600px;
-  list-style-type: none;
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--border-radius);
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.button:hover {
+  background-color: var(--accent-color);
+}
+
+.button-secondary {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.button-secondary:hover {
+  background-color: var(--secondary-color);
+}
+
+.logout-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+
+/* Timeline styles */
+.timeline-container {
+  width: 180px;
+  height: 500px; /* Fixed height */
+  position: sticky;
+  top: 20px;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 10px;
   margin-top: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.message {
-  background-color: #f0f0f0;
-  margin: 8px 0;
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  overflow-wrap: break-word; /* Allows the text to wrap and prevents it from overflowing the container */
+.timeline-header {
+  text-align: center;
+  font-weight: bold;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 10px;
+  color: var(--primary-color);
 }
 
-.message-sender {
+.timeline-track {
+  position: relative;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background-color: #e0e0e0;
+  transform: translateX(-50%);
+}
+
+.timeline-marker {
+  position: relative;
+  margin: 10px 0;
+  cursor: pointer;
+  z-index: 1;
+  width: 100%;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.timeline-marker-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  margin: 0 auto;
+  transition: var(--transition);
+}
+
+.timeline-marker:hover .timeline-marker-dot {
+  transform: scale(1.5);
+}
+
+.timeline-marker-label {
+  font-size: 0.8rem;
+  margin-top: 5px;
+  white-space: nowrap;
+  color: var(--light-text-color);
+  transition: var(--transition);
+}
+
+.timeline-marker:hover .timeline-marker-label {
+  color: var(--primary-color);
   font-weight: bold;
 }
 
-.message-content {
-  margin-top: 4px;
-  word-break: break-word; /* Ensures long words like URLs break and wrap to the next line */
+.timeline-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--light-text-color);
 }
 
-.message-timestamp {
-  font-size: 0.8rem;
-  text-align: right;
-  margin-top: 8px;
-  color: #707070;
-  white-space: nowrap; /* Ensures timestamps don't wrap, which is generally desired for small, concise text like dates */
+@media (max-width: 900px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .timeline-container {
+    width: 100%;
+    height: 120px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  .timeline-track {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: auto;
+    height: 80px;
+    padding: 0 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  .timeline-line {
+    left: 0;
+    right: 0;
+    top: 50%;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+    transform: translateY(-50%);
+  }
+  
+  .timeline-marker {
+    margin: 0 15px;
+    width: auto;
+  }
+  
+  .timeline-marker-label {
+    margin-top: 15px;
+  }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .search-container {
-    width: 90%;
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .message-list, .message {
-    width: 90%;
+  .date-picker {
+    width: 100%;
+  }
+
+  .logout-button {
+    position: static;
+    margin-bottom: 10px;
+    align-self: flex-end;
   }
 }
