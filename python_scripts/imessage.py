@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Dict
 import sys
 
-from .message import Message
+from message import Message
 
 
 def load_senders_map(csv_path: str) -> Dict[str, str]:
