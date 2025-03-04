@@ -20,7 +20,7 @@ def load_senders_map(csv_path: str) -> Dict[str, str]:
 
 
 def clean_message_content(content: str) -> str:
-    """Clean message content by removing reactions, link previews, and formatting file attachments."""
+    """Clean message content by removing reactions, link previews, file attachments, and handling edited text."""
     # Remove reactions section
     content = re.sub(r"Reactions:.*?(?=\n\n|\n$|$)", "", content, flags=re.DOTALL)
 
@@ -38,14 +38,19 @@ def clean_message_content(content: str) -> str:
             content,
         )
 
-    # Remove link previews (anything after a URL that describes the link)
+    # Remove link previews
     content = re.sub(
         r"(https?://\S+)\n[^h].*?(?=\n\n|\n$|$)", r"\1", content, flags=re.DOTALL
     )
 
-    # Clean up any extra whitespace
+    # Clean up extra whitespace
     content = re.sub(r"\n{3,}", "\n\n", content)
     content = content.strip()
+
+    # If there's an edited section, use only the text after "Edited ...:"
+    edited_match = re.search(r"Edited\s.*?:\s*(.+)", content, flags=re.DOTALL)
+    if edited_match:
+        content = edited_match.group(1).strip()
 
     return content
 
@@ -55,54 +60,53 @@ def parse_messages(content: str, senders_map: Dict[str, str]) -> List[Message]:
     current_message = []
     timestamp = None
     sender = None
+    had_nested = False  # Flag to mark if a nested block was encountered
 
-    # Pattern to match timestamp line
+    # Updated regex to enforce that nothing extra is on the line.
     timestamp_pattern = r"^(\w+ \d{1,2}, \d{4}\s+\d{1,2}:\d{2}:\d{2}(?: [APM]{2})?)(?: \(.*?\))?\s*$"
 
     lines = content.split("\n")
 
     for line in lines:
-        # Skip empty lines
         if not line.strip():
             continue
 
-        # Check if this is a timestamp line
         timestamp_match = re.match(timestamp_pattern, line)
-
         if timestamp_match:
-            # If we have a previous message, save it
+            # Save the previous message if it exists.
             if timestamp and sender and current_message:
                 message_content = "\n".join(current_message)
                 clean_content = clean_message_content(message_content.strip())
-
                 if clean_content:
-                    # Convert timestamp to datetime
                     dt = datetime.strptime(timestamp, "%b %d, %Y %I:%M:%S %p")
                     actual_sender = senders_map.get(sender, sender)
                     messages.append(Message(actual_sender, clean_content, dt))
-
-            # Start new message
+            # Reset for the new message.
             timestamp = timestamp_match.group(1)
             current_message = []
             sender = None
+            had_nested = False
         elif timestamp and not sender:
-            # This line after timestamp should be the sender
+            # First non-timestamp line is the sender.
             sender = line.strip()
         elif timestamp and sender:
-            # If line is indented, skip it (it's a nested message)
-            if not line.startswith("    "):
+            # If the line is indented, mark that we had nested content and skip it.
+            if line.startswith("    "):
+                had_nested = True
+                continue
+            else:
+                # If we've already seen nested lines, ignore any later non-indented lines.
+                if had_nested:
+                    continue
                 current_message.append(line)
-
-    # Don't forget to add the last message
+    # Save the final message.
     if timestamp and sender and current_message:
         message_content = "\n".join(current_message)
         clean_content = clean_message_content(message_content.strip())
-
         if clean_content:
             dt = datetime.strptime(timestamp, "%b %d, %Y %I:%M:%S %p")
             actual_sender = senders_map.get(sender, sender)
             messages.append(Message(actual_sender, clean_content, dt))
-
     return messages
 
 
