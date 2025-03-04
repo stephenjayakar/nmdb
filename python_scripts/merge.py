@@ -13,4 +13,6 @@ j3 = json.loads(c3)
 m = j1 + j2 + j3
 
 with open('../output/merged.json', 'w') as f:
-    f.write(json.dumps(m))
+    for message in m:
+        f.write(json.dumps(message) + '\n')
+
