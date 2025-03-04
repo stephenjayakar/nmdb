@@ -57,9 +57,7 @@ def parse_messages(content: str, senders_map: Dict[str, str]) -> List[Message]:
     sender = None
 
     # Pattern to match timestamp line
-    timestamp_pattern = (
-        r"^(\w+ \d{1,2}, \d{4}\s+\d{1,2}:\d{2}:\d{2}(?: [APM]{2})?)(?: \(.*?\))?"
-    )
+    timestamp_pattern = r"^(\w+ \d{1,2}, \d{4}\s+\d{1,2}:\d{2}:\d{2}(?: [APM]{2})?)(?: \(.*?\))?\s*$"
 
     lines = content.split("\n")
 
