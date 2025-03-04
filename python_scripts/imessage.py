@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Dict
 import sys
 
-from message import Message
+from .message import Message
 
 
 def load_senders_map(csv_path: str) -> Dict[str, str]:
@@ -52,14 +52,18 @@ def clean_message_content(content: str) -> str:
 
 def parse_messages(content: str, senders_map: Dict[str, str]) -> List[Message]:
     # Pattern to match timestamp, sender, and content
-    pattern = r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4} \d{1,2}:\d{2}:\d{2} (?:AM|PM))(?: \(.*?\))?\n([^\n]+)\n([\s\S]*?)(?=(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}|$)"
-
+    pattern = (
+        r"(\w+ \d{1,2}, \d{4}  \d{1,2}:\d{2}:\d{2}(?: [APM]{2})?)"  # Match and capture the timestamp
+        r"(?: \(.*?\))?\n"  # Optionally match additional info in parentheses
+        r"(\+?[^\n]+)\n"  # Capture the phone number or sender ID
+        r"([\s\S]+?)(?=\n(?:\w{3} \d{1,2}, \d{4}  \d{1,2}:\d{2}:\d{2}|\Z))"
+    )
     matches = re.findall(pattern, content)
 
     messages = []
     for raw_timestamp, sender, content in matches:
         # Skip indented/nested messages
-        if not content or content[0] == ' ':
+        if not content or content[0] == " ":
             continue
 
         # Clean up the content
@@ -75,7 +79,7 @@ def parse_messages(content: str, senders_map: Dict[str, str]) -> List[Message]:
         # Map sender to the actual handle
         actual_sender = senders_map.get(sender, sender)
 
-        message_data = Message(clean_content, actual_sender, timestamp)
+        message_data = Message(actual_sender, clean_content, timestamp)
 
         messages.append(message_data)
 
@@ -86,6 +90,7 @@ def write_to_json(messages: List[Message], json_filename: str):
     with open(json_filename, "w", encoding="utf-8") as f:
         json.dump([m.to_dict() for m in messages], f, indent=2)
 
+
 def main():
     filename = sys.argv[1]
     filepath = f"../data_sources/{filename}.txt"
@@ -93,7 +98,6 @@ def main():
 
     # Load sender mappings
     senders_map = load_senders_map("../data_sources/senders.csv")
-
 
     with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()
