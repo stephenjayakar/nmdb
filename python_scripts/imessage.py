@@ -51,37 +51,59 @@ def clean_message_content(content: str) -> str:
 
 
 def parse_messages(content: str, senders_map: Dict[str, str]) -> List[Message]:
-    # Pattern to match timestamp, sender, and content
-    pattern = (
-        r"(\w+ \d{1,2}, \d{4}  \d{1,2}:\d{2}:\d{2}(?: [APM]{2})?)"  # Match and capture the timestamp
-        r"(?: \(.*?\))?\n"  # Optionally match additional info in parentheses
-        r"(\+?[^\n]+)\n"  # Capture the phone number or sender ID
-        r"([\s\S]+?)(?=\n(?:\w{3} \d{1,2}, \d{4}  \d{1,2}:\d{2}:\d{2}|\Z))"
-    )
-    matches = re.findall(pattern, content)
-
     messages = []
-    for raw_timestamp, sender, content in matches:
-        # Skip indented/nested messages
-        if not content or content[0] == " ":
+    current_message = []
+    timestamp = None
+    sender = None
+
+    # Pattern to match timestamp line
+    timestamp_pattern = (
+        r"^(\w+ \d{1,2}, \d{4}  \d{1,2}:\d{2}:\d{2}(?: [APM]{2})?)(?: \(.*?\))?$"
+    )
+
+    lines = content.split("\n")
+
+    for line in lines:
+        # Skip empty lines
+        if not line.strip():
             continue
 
-        # Clean up the content
-        clean_content = clean_message_content(content.strip())
+        # Check if this is a timestamp line
+        timestamp_match = re.match(timestamp_pattern, line)
 
-        # Skip if content is empty after cleaning
-        if not clean_content:
-            continue
+        if timestamp_match:
+            # If we have a previous message, save it
+            if timestamp and sender and current_message:
+                message_content = "\n".join(current_message)
+                clean_content = clean_message_content(message_content.strip())
 
-        # Convert timestamp to ISO 8601 format
-        timestamp = datetime.strptime(raw_timestamp, "%b %d, %Y %I:%M:%S %p")
+                if clean_content:
+                    # Convert timestamp to datetime
+                    dt = datetime.strptime(timestamp, "%b %d, %Y %I:%M:%S %p")
+                    actual_sender = senders_map.get(sender, sender)
+                    messages.append(Message(actual_sender, clean_content, dt))
 
-        # Map sender to the actual handle
-        actual_sender = senders_map.get(sender, sender)
+            # Start new message
+            timestamp = timestamp_match.group(1)
+            current_message = []
+            sender = None
+        elif timestamp and not sender:
+            # This line after timestamp should be the sender
+            sender = line.strip()
+        elif timestamp and sender:
+            # If line is indented, skip it (it's a nested message)
+            if not line.startswith("    "):
+                current_message.append(line)
 
-        message_data = Message(actual_sender, clean_content, timestamp)
+    # Don't forget to add the last message
+    if timestamp and sender and current_message:
+        message_content = "\n".join(current_message)
+        clean_content = clean_message_content(message_content.strip())
 
-        messages.append(message_data)
+        if clean_content:
+            dt = datetime.strptime(timestamp, "%b %d, %Y %I:%M:%S %p")
+            actual_sender = senders_map.get(sender, sender)
+            messages.append(Message(actual_sender, clean_content, dt))
 
     return messages
 

@@ -11,3 +11,11 @@ npx convex import --append --table messages ../output/1.json
 ```
 
 It doesn't support overwriting properly... Have to also probably do with messenger data.
+
+# Scripts
+
+Entry points
+* `imessage.py`
+* `messenger.py`
+
+Figure it out from there
