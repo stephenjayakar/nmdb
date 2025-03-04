@@ -6,6 +6,36 @@ import csv
 from datetime import datetime
 from typing import List, Dict
 import sys
+from dataclasses import dataclass
+
+
+@dataclass
+class Message:
+    sender: str
+    message: str
+    timestamp: datetime
+
+    def __repr__(self):
+        return f'{self.timestamp} {self.sender}: {self.message}'
+
+    def is_complete(self):
+        return self.sender != None and self.message != None and self.timestamp != None
+
+    def hash(self):
+        if not self.is_complete():
+            raise Exception("can't hash an incomplete message")
+        return hashlib.md5(self.__repr__().encode()).digest()
+
+    # Dict that's used for JSON serialization
+    def to_dict(self):
+        b64_hash = base64.b64encode(self.hash()).decode()
+
+        return {
+            "id": b64_hash,
+            "message": self.message,
+            "sender": self.sender,
+            "timestamp": str(self.timestamp),
+        }
 
 
 def hash_message(message_data: Dict) -> str:
@@ -59,18 +89,13 @@ def clean_message_content(content: str) -> str:
     return content
 
 
-def parse_messages(text_file: str, senders_map: Dict[str, str]) -> List[Dict]:
-    """Parse messages from text file into structured format."""
-    with open(text_file, "r", encoding="utf-8") as f:
-        content = f.read()
-
+def parse_messages(content: str, senders_map: Dict[str, str]) -> List[Message]:
     # Pattern to match timestamp, sender, and content
     pattern = r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4} \d{1,2}:\d{2}:\d{2} (?:AM|PM))(?: \(.*?\))?\n([^\n]+)\n([\s\S]*?)(?=(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}|$)"
 
     matches = re.findall(pattern, content)
 
     messages = []
-    import pdb
     for raw_timestamp, sender, content in matches:
         # Skip indented/nested messages
         if not content or content[0] == ' ':
@@ -85,38 +110,35 @@ def parse_messages(text_file: str, senders_map: Dict[str, str]) -> List[Dict]:
 
         # Convert timestamp to ISO 8601 format
         timestamp = datetime.strptime(raw_timestamp, "%b %d, %Y %I:%M:%S %p")
-        iso_timestamp = timestamp.isoformat()
 
         # Map sender to the actual handle
         actual_sender = senders_map.get(sender, sender)
 
-        message_data = {
-            "message": clean_content,
-            "sender": actual_sender,
-            "timestamp": iso_timestamp,  # use the ISO formatted timestamp
-        }
+        message_data = Message(clean_content, actual_sender, timestamp)
 
-        # Create the hash and encode it in base64
-        message_hash = hash_message(message_data)
-        b64_hash = base64.b64encode(message_hash).decode()
-
-        message_data["id"] = b64_hash
         messages.append(message_data)
 
     return messages
 
 
+def write_to_json(messages: List[Message], json_filename: str):
+    with open(json_filename, "w", encoding="utf-8") as f:
+        json.dump([m.to_dict() for m in messages], f, indent=2)
+
 def main():
     filename = sys.argv[1]
+    filepath = f"../data_sources/{filename}.txt"
+    json_filename = f"../output/{filename}.json"
+
     # Load sender mappings
     senders_map = load_senders_map("../data_sources/senders.csv")
 
-    # Parse messages from text file
-    messages = parse_messages(f"../data_sources/{filename}.txt", senders_map)
 
-    # Write to JSON file
-    with open(f"../output/{filename}.json", "w", encoding="utf-8") as f:
-        json.dump(messages, f, indent=2)
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read()
+    messages = parse_messages(content, senders_map)
+
+    write_to_json(messages, json_filename)
 
     print(f"Converted {len(messages)} messages to JSON format.")
 
