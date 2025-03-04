@@ -1,13 +1,11 @@
 import json
 import re
-import base64
-import hashlib
 import csv
 from datetime import datetime
 from typing import List, Dict
 import sys
 
-import Message from message
+from message import Message
 
 
 def load_senders_map(csv_path: str) -> Dict[str, str]:
