@@ -1,8 +1,21 @@
+# Process
+
+### Getting the `jsonl` to upload
+
+1. Get messenger export (json) & imessage export (txt)
+2. You have to run `imessage.py` and `messenger.py`
+3. Then run `merge.py`
+
+### Getting analytics
+
+You have to have `merged.jsonl`; then you run `analytics.py`, and then upload `analytics.json`
+
+# Other stuff
+
 * So you first run `imessage-exporter -f txt`
 * Then you copy in the txt files that are appropriate as well as a sender.csv (this is already set up)
 * Then you run the script
 * and then import the json
-
 
 You import by doing something like
 
@@ -17,5 +30,6 @@ It doesn't support overwriting properly... Have to also probably do with messeng
 Entry points
 * `imessage.py`
 * `messenger.py`
+* `analytics.py`
+* `merge.py`
 
-Figure it out from there
