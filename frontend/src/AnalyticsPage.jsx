@@ -187,6 +187,7 @@ const AnalyticsPage = ({ token }) => {
   //     },
   //   },
   // };
+  console.log(emojiData)
 
   return (
     <Container className="lovey-dashboard my-4">
@@ -239,22 +240,33 @@ const AnalyticsPage = ({ token }) => {
       </Row>
 
       <Row>
-        {/* Emoji Frequency Bar Chart */}
         <Col md={6} className="mb-4">
           <Card className="lovey-card">
             <Card.Header>Emoji Frequency</Card.Header>
             <Card.Body>
-              <Bar
-                data={emojiData}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { display: false } },
-                }}
-              />
+              {/* Wrap the chart in a container that scrolls if there are many bars */}
+              <div style={{ height: "600px", overflowY: "scroll" }}>
+                <Bar
+                  data={emojiData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    // Use horizontal bars instead of vertical ones
+                    indexAxis: "y",
+                    plugins: {
+                      legend: { display: false },
+                    },
+                    scales: {
+                      // Optionally disable auto-skipping for tick labels so that all labels show
+                      x: { ticks: { autoSkip: false } },
+                      y: { ticks: { autoSkip: false } },
+                    },
+                  }}
+                />
+              </div>
             </Card.Body>
           </Card>
         </Col>
-
         {/* Word Frequency Bar Chart */}
         <Col md={6} className="mb-4">
           <Card className="lovey-card">

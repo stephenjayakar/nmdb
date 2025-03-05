@@ -60,14 +60,14 @@ def emoji_frequency(messages):
         emojis_found = emoji.emoji_list(msg.message)
         emoji_counter.update([e["emoji"] for e in emojis_found])
 
-    common_emojis = emoji_counter.most_common(10)
+    common_emojis = emoji_counter.most_common(100)
     print("Most common emojis:")
     for e, count in common_emojis:
         print(f"{e}: {count}")
     return common_emojis
 
 
-def calculate_word_frequencies(messages, top_n=10):
+def calculate_word_frequencies(messages, top_n=100):
     word_counter = collections.Counter()
     ascii_pattern = re.compile(r"\b[a-zA-Z]+\b")
 
