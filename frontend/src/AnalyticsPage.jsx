@@ -1,6 +1,7 @@
 import React from "react";
 import { Container, Row, Col, Card, Spinner } from "react-bootstrap";
 import { Pie, Bar, Line, Chart } from "react-chartjs-2";
+import zoomPlugin from "chartjs-plugin-zoom";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -31,7 +32,8 @@ ChartJS.register(
   Legend,
   ArcElement,
   WordCloudController,
-  WordElement
+  WordElement,
+  zoomPlugin,
 );
 
 // Example: Increase default font size
@@ -122,6 +124,13 @@ const AnalyticsPage = ({ token }) => {
       {
         label: 'Score',
         data: data,
+        backgroundColor: function(ctx) {
+    // You can use a deterministic method here if desired.
+    const r = Math.floor(Math.random() * 150) + 100;
+    const g = Math.floor(Math.random() * 150) + 100;
+    const b = Math.floor(Math.random() * 150) + 100;
+    return `rgba(${r}, ${g}, ${b}, 0.8)`;
+  },
       },
     ],
   };
@@ -306,11 +315,11 @@ const AnalyticsPage = ({ token }) => {
       </Row>
 
       {/* Message Frequency per Day Line Chart */}
-      <Card className="lovey-card mb-4">
-        <Card.Header>
-          Message Frequency per Day (Nadia & Stephen)
-        </Card.Header>
-        <Col md={12} className="mb-4">
+    <Card className="lovey-card mb-4">
+      <Card.Header>
+        Message Frequency per Day (Nadia & Stephen)
+      </Card.Header>
+      <Col md={12} className="mb-4">
         <Card.Body>
           <Line
             data={messageFrequencyData}
@@ -318,13 +327,25 @@ const AnalyticsPage = ({ token }) => {
               responsive: true,
               plugins: {
                 legend: { position: "top" },
-                title: { display: true, text: "Messages per Day" },
+                title: { display: true, text: "Messages per Day (try zooming!)" },
+                // Enable zooming and panning on the x-axis:
+                zoom: {
+                  pan: {
+                    enabled: true,
+                    mode: "x",
+                  },
+                  zoom: {
+                    wheel: { enabled: true }, // Allow zooming with the mouse wheel
+                    pinch: { enabled: true },
+                    mode: "x",
+                  },
+                },
               },
             }}
           />
         </Card.Body>
-        </Col>
-      </Card>
+      </Col>
+    </Card>
 
       {/* Texts per Time of Day Bar Chart */}
       <Card className="lovey-card mb-4">
