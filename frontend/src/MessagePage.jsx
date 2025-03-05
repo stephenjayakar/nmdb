@@ -177,7 +177,7 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
         const bubbleStyle = isSender ? senderStyle : receiverStyle;
         return (
           <div
-            key={msg.id}
+            key={msg._id}
             className="d-flex mb-2"
             style={{
               width: "100%",
