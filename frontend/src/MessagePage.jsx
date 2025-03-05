@@ -26,7 +26,7 @@ const MessagePage = ({ token }) => {
   const [messages, setMessages] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef(null);
-  // "stephen" or "nadia" view determines which side is sender
+  // "stephen" or "nadia" view determines which side is sender.
   const [currentView, setCurrentView] = useState("stephen");
 
   const timelineBounds = useQuery(api.messages.timelineBounds, { token });
@@ -98,7 +98,7 @@ const MessagePage = ({ token }) => {
     reloadWithTimestamp(date);
   };
 
-  // Toggle between "stephen" and "nadia" view
+  // Toggle between "stephen" and "nadia" view.
   const toggleView = () => {
     setCurrentView((prev) => (prev === "stephen" ? "nadia" : "stephen"));
   };
@@ -161,16 +161,17 @@ const MessagePage = ({ token }) => {
 const MessageList = ({ messages, onTimestampClick, currentView }) => {
   if (!messages.length) return null;
 
-  // Helper: make links clickable.
-  const makeLinksClickable = (text) => {
+  // Updated function: now accepts a second parameter (isSender) and adds inline styling.
+  const makeLinksClickable = (text, isSender) => {
+    const linkColor = isSender ? "#ffffff" : "#007bff";
+    const linkStyle = `color: ${linkColor}; text-decoration: underline;`;
     const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[A-Z0-9+&@#\/%=~_|])/gi;
     return text.replace(urlPattern, (url) =>
-      `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+      `<a href="${url}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">${url}</a>`
     );
   };
 
   // Chat bubble styles.
-  // Added minWidth to ensure enough space for the timestamp.
   const senderStyle = {
     backgroundColor: "#007aff", // blue bubble
     color: "white",
@@ -206,10 +207,10 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
             }}
           >
             <div style={bubbleStyle}>
-              {/* Message content */}
+              {/* Message content with clickable links */}
               <div
                 dangerouslySetInnerHTML={{
-                  __html: makeLinksClickable(msg.message),
+                  __html: makeLinksClickable(msg.message, isSender),
                 }}
               />
               {/* Timestamp */}

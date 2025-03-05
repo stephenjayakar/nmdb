@@ -1,3 +1,8 @@
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 :root {
   --primary-color: #3498db;
   --secondary-color: #e8f4fc;
@@ -122,6 +127,15 @@ input[type="text"]:focus {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .timeline-container {
+    display: none !important;
+  }
+  body {
+    overflow-x: hidden;
+  }
 }
 
 @media (max-width: 900px) {
