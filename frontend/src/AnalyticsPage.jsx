@@ -223,18 +223,30 @@ const AnalyticsPage = ({ token }) => {
         </Col>
         {/* Word Frequency Bar Chart (to update later) */}
         <Col md={6} className="mb-4">
-          <Card className="lovey-card">
-            <Card.Header>Word Frequency</Card.Header>
-            <Card.Body>
-              <Bar
-                data={wordData}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { display: false } },
-                }}
-              />
-            </Card.Body>
-          </Card>
+<Card className="lovey-card">
+  <Card.Header>Word Frequency</Card.Header>
+  <Card.Body>
+    {/* Outer container with a fixed height and vertical scroll */}
+    <div style={{ height: "600px", overflowY: "auto", border: "1px solid #ddd" }}>
+      {/* Inner container height based on the number of word labels */}
+      <div style={{ height: `${wordLabels.length * 25}px` }}>
+        <Bar
+          data={wordData}
+          options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: "y", // horizontal bars
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { autoSkip: false } },
+              y: { ticks: { autoSkip: false } },
+            },
+          }}
+        />
+      </div>
+    </div>
+  </Card.Body>
+</Card>
         </Col>
       </Row>
 
