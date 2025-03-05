@@ -1,0 +1,29 @@
+/* Background and overall layout */
+.lovey-dashboard {
+  background: linear-gradient(135deg, #ffcccc, #ffe6e6);
+  min-height: 100vh;
+  padding: 30px 15px;
+}
+
+/* Lovey header with playful font and heart accents */
+.lovey-header {
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  text-align: center;
+  color: #d6336c;
+}
+
+/* Styled cards with rounded corners and soft shadows */
+.lovey-card {
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+/* Card header styling */
+.card-header {
+  background-color: #ff99a8;
+  color: white;
+  font-weight: bold;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+}

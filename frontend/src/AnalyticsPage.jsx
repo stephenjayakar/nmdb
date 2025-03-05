@@ -5,7 +5,7 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,     // Import the Bar element
+  BarElement,
   PointElement,
   LineElement,
   Title,
@@ -13,12 +13,12 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
+import "./AnalyticsPage.css"; // Custom lovey styles
 
-// Register all necessary components
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,     // Register the Bar element
+  BarElement,
   PointElement,
   LineElement,
   Title,
@@ -116,11 +116,13 @@ const AnalyticsPage = () => {
   };
 
   return (
-    <Container className="my-4">
-      <h2 className="mb-4">Analytics Dashboard</h2>
+    <Container className="lovey-dashboard my-4">
+      <h2 className="lovey-header mb-4">
+        💖 Analytics Dashboard 💖
+      </h2>
 
       {/* Totals Section */}
-      <Card className="mb-4">
+      <Card className="lovey-card mb-4">
         <Card.Header>Totals</Card.Header>
         <Card.Body>
           <Row>
@@ -143,7 +145,7 @@ const AnalyticsPage = () => {
       </Card>
 
       {/* Pie Chart Section */}
-      <Card className="mb-4">
+      <Card className="lovey-card mb-4">
         <Card.Header>Who Sent More Messages?</Card.Header>
         <Card.Body>
           <Pie data={pieData} />
@@ -153,12 +155,15 @@ const AnalyticsPage = () => {
       <Row>
         {/* Emoji Frequency Bar Chart */}
         <Col md={6} className="mb-4">
-          <Card>
+          <Card className="lovey-card">
             <Card.Header>Emoji Frequency</Card.Header>
             <Card.Body>
               <Bar
                 data={emojiData}
-                options={{ responsive: true, plugins: { legend: { display: false } } }}
+                options={{
+                  responsive: true,
+                  plugins: { legend: { display: false } },
+                }}
               />
             </Card.Body>
           </Card>
@@ -166,12 +171,15 @@ const AnalyticsPage = () => {
 
         {/* Word Frequency Bar Chart */}
         <Col md={6} className="mb-4">
-          <Card>
+          <Card className="lovey-card">
             <Card.Header>Word Frequency</Card.Header>
             <Card.Body>
               <Bar
                 data={wordData}
-                options={{ responsive: true, plugins: { legend: { display: false } } }}
+                options={{
+                  responsive: true,
+                  plugins: { legend: { display: false } },
+                }}
               />
             </Card.Body>
           </Card>
@@ -179,7 +187,7 @@ const AnalyticsPage = () => {
       </Row>
 
       {/* Message Frequency Line Chart */}
-      <Card className="mb-4">
+      <Card className="lovey-card mb-4">
         <Card.Header>Message Frequency per Day (Nadia & Stephen)</Card.Header>
         <Card.Body>
           <Line
@@ -196,12 +204,15 @@ const AnalyticsPage = () => {
       </Card>
 
       {/* Texts per Time of Day (PST) */}
-      <Card className="mb-4">
+      <Card className="lovey-card mb-4">
         <Card.Header>Texts per Time of Day (PST)</Card.Header>
         <Card.Body>
           <Bar
             data={textsPerTimeData}
-            options={{ responsive: true, plugins: { legend: { display: false } } }}
+            options={{
+              responsive: true,
+              plugins: { legend: { display: false } },
+            }}
           />
         </Card.Body>
       </Card>
