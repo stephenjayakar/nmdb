@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import Timeline from './Timeline'
+import Timeline from "./Timeline";
 import { useQuery, useConvex } from "convex/react";
 import { api } from "./convex/_generated/api";
-import { Button, Spinner, Card } from "react-bootstrap";
+import { Button, Spinner } from "react-bootstrap";
 import SearchBarDatePicker from "./SearchBarDatePicker";
 
 const formatTimestamp = (timestamp) => {
@@ -24,9 +24,10 @@ const formatTimestamp = (timestamp) => {
 const MessagePage = ({ token }) => {
   const convex = useConvex();
   const [messages, setMessages] = useState([]);
-  const messagesEndRef = useRef(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef(null);
+  // "stephen" or "nadia" view determines which side is sender
+  const [currentView, setCurrentView] = useState("stephen");
 
   const timelineBounds = useQuery(api.messages.timelineBounds, { token });
   const initialMessages = useQuery(api.messages.getInitialMessages, { token });
@@ -97,11 +98,22 @@ const MessagePage = ({ token }) => {
     reloadWithTimestamp(date);
   };
 
+  // Toggle between "stephen" and "nadia" view
+  const toggleView = () => {
+    setCurrentView((prev) => (prev === "stephen" ? "nadia" : "stephen"));
+  };
+
   return (
     <div className="container">
       <div className="row justify-content-center">
         <div className="col-md-8">
-          {/* Add the Search Bar & Date Picker above your messages */}
+          {/* Toggle View Button */}
+          <div className="d-flex justify-content-end mb-3">
+            <Button variant="outline-secondary" onClick={toggleView}>
+              Switch to {currentView === "stephen" ? "Nadia" : "Stephen"} View
+            </Button>
+          </div>
+          {/* Search Bar & Date Picker */}
           <SearchBarDatePicker
             onSearch={handleSearch}
             onDateChange={handleDateChange}
@@ -120,6 +132,7 @@ const MessagePage = ({ token }) => {
               <MessageList
                 messages={messages}
                 onTimestampClick={reloadWithTimestamp}
+                currentView={currentView}
               />
               <div ref={observerRef} style={{ height: "20px" }}>
                 {isLoadingMore && (
@@ -145,54 +158,78 @@ const MessagePage = ({ token }) => {
   );
 };
 
-const MessageList = ({ messages, onTimestampClick }) => {
+const MessageList = ({ messages, onTimestampClick, currentView }) => {
   if (!messages.length) return null;
 
+  // Helper: make links clickable.
   const makeLinksClickable = (text) => {
     const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[A-Z0-9+&@#\/%=~_|])/gi;
-    return text.replace(
-      urlPattern,
-      (url) =>
-        `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    return text.replace(urlPattern, (url) =>
+      `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
     );
   };
 
+  // Chat bubble styles.
+  // Added minWidth to ensure enough space for the timestamp.
+  const senderStyle = {
+    backgroundColor: "#007aff", // blue bubble
+    color: "white",
+    borderRadius: "20px",
+    padding: "10px 15px",
+    minWidth: "200px",
+    maxWidth: "80%",
+    margin: "5px 0",
+  };
+
+  const receiverStyle = {
+    backgroundColor: "#e5e5ea", // grey bubble
+    color: "black",
+    borderRadius: "20px",
+    padding: "10px 15px",
+    minWidth: "200px",
+    maxWidth: "80%",
+    margin: "5px 0",
+  };
+
   return (
-    <div className="message-list">
+    <div className="d-flex flex-column">
       {messages.map((msg) => {
-        const isUser = msg.sender.toLowerCase() === "user";
+        const isSender = msg.sender.toLowerCase() === currentView;
+        const bubbleStyle = isSender ? senderStyle : receiverStyle;
         return (
-          <Card
+          <div
             key={msg.id}
-            className={`mb-3 ${isUser ? "ms-4" : "me-4"}`}
-            bg={isUser ? "light" : "white"}
+            className="d-flex mb-2"
+            style={{
+              width: "100%",
+              justifyContent: isSender ? "flex-end" : "flex-start",
+            }}
           >
-            <Card.Body>
-              <Card.Title className="text-primary">
-                {msg.sender}
-              </Card.Title>
-              <Card.Text>
-                <span
-                  dangerouslySetInnerHTML={{
-                    __html: makeLinksClickable(msg.message),
+            <div style={bubbleStyle}>
+              {/* Message content */}
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: makeLinksClickable(msg.message),
+                }}
+              />
+              {/* Timestamp */}
+              <div className="text-end mt-1" style={{ fontSize: "0.8em" }}>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onTimestampClick(msg.timestamp);
                   }}
-                />
-              </Card.Text>
-              <Card.Footer className="text-end p-0 bg-transparent border-0">
-                <small className="text-muted">
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onTimestampClick(msg.timestamp);
-                    }}
-                  >
-                    {formatTimestamp(msg.timestamp)}
-                  </a>
-                </small>
-              </Card.Footer>
-            </Card.Body>
-          </Card>
+                  style={{
+                    color: isSender ? "rgba(255,255,255,0.8)" : "gray",
+                    textDecoration: "none",
+                  }}
+                >
+                  {formatTimestamp(msg.timestamp)}
+                </a>
+              </div>
+            </div>
+          </div>
         );
       })}
     </div>
