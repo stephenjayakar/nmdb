@@ -117,46 +117,39 @@ def average_response_time_per_day(messages):
     for msg in messages:
         msg_by_day[msg.timestamp.date()].append(msg)
 
-    if not messages:
-        return {}
-
     # Prepare result dictionary
     result = {}
-    # Determine the full range of days from first to last message
-    min_day = min(msg_by_day.keys())
-    max_day = max(msg_by_day.keys())
-    current_day = min_day
 
-    while current_day <= max_day:
-        if current_day in msg_by_day:
-            # Sort messages for the day by timestamp
-            day_msgs = sorted(msg_by_day[current_day], key=lambda m: m.timestamp)
-            # Initialize separate accumulators for stephen and nadia
-            stephen_total = 0
-            stephen_count = 0
-            nadia_total = 0
-            nadia_count = 0
-            prev_msg = None
-            # Loop through messages for the day
-            for m in day_msgs:
-                if prev_msg is not None and m.sender.lower() != prev_msg.sender.lower():
-                    diff = (m.timestamp - prev_msg.timestamp).total_seconds()
-                    # If Stephen is replying to Nadia, attribute to Stephen
+    # Process only days where messages exist
+    for day, day_msgs in msg_by_day.items():
+        # Sort messages for the day by timestamp
+        day_msgs.sort(key=lambda m: m.timestamp)
+        # Initialize separate accumulators for stephen and nadia
+        stephen_total = 0
+        stephen_count = 0
+        nadia_total = 0
+        nadia_count = 0
+        prev_msg = None
+        # Loop through messages for the day
+        for m in day_msgs:
+            if prev_msg is not None and m.sender.lower() != prev_msg.sender.lower():
+                # Calculate the response interval in seconds
+                diff = (m.timestamp - prev_msg.timestamp).total_seconds()
+                # Only count this response pair if the difference is 1 day or less
+                if diff <= 86400:
                     if m.sender.lower() == "stephen" and prev_msg.sender.lower() == "nadia":
                         stephen_total += diff
                         stephen_count += 1
-                    # If Nadia is replying to Stephen, attribute to Nadia
                     elif m.sender.lower() == "nadia" and prev_msg.sender.lower() == "stephen":
                         nadia_total += diff
                         nadia_count += 1
-                prev_msg = m
+            prev_msg = m
 
+        # Only set the day's averages if we have at least one valid response pair
+        if stephen_count > 0 or nadia_count > 0:
             stephen_avg = stephen_total / stephen_count if stephen_count > 0 else 0
             nadia_avg = nadia_total / nadia_count if nadia_count > 0 else 0
-            result[current_day] = {"stephen": stephen_avg, "nadia": nadia_avg}
-        else:
-            result[current_day] = {"stephen": 0, "nadia": 0}
-        current_day += timedelta(days=1)
+            result[day] = {"stephen": stephen_avg, "nadia": nadia_avg}
     return result
 
 

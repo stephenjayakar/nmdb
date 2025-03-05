@@ -190,10 +190,10 @@ const AnalyticsPage = ({ token }) => {
     (a, b) => new Date(a) - new Date(b)
   );
   const avgResponseNadia = responseDays.map(
-    (day) => analyticsData.average_response_time_per_day[day].nadia || 0
+    (day) => analyticsData.average_response_time_per_day[day].nadia / 60 || 0
   );
   const avgResponseStephen = responseDays.map(
-    (day) => analyticsData.average_response_time_per_day[day].stephen || 0
+    (day) => analyticsData.average_response_time_per_day[day].stephen / 60 || 0
   );
   const avgResponseTimeData = {
     labels: responseDays,
@@ -389,7 +389,7 @@ const AnalyticsPage = ({ token }) => {
              legend: { position: "top" },
              title: {
               display: true,
-              text: "Average Response Time per Day (in seconds)",
+              text: "Average Response Time per Day (in minutes)",
             },
              zoom: {
               pan: { enabled: true, mode: "x" },
