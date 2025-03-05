@@ -159,7 +159,6 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
     padding: "10px 15px",
     minWidth: "200px",
     maxWidth: "80%",
-    margin: "5px 0",
   };
 
   const receiverStyle = {
@@ -169,7 +168,6 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
     padding: "10px 15px",
     minWidth: "200px",
     maxWidth: "80%",
-    margin: "5px 0",
   };
 
   return (
