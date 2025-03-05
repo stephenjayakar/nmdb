@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./App.css";
 import MessagePage from "./MessagePage";
 import AnalyticsPage from "./AnalyticsPage";
+import { Container, Row, Col, Button, Form } from "react-bootstrap";
 
 function App() {
   const [token, setToken] = useState("");
@@ -45,51 +46,65 @@ function App() {
     setShowAnalytics((prev) => !prev);
   };
 
-  return token ? (
+  if (!token) {
+    return (
+      <div className="auth-container">
+        <h1 className="auth-title">Message Archive</h1>
+        <div className="auth-form">
+          <Form.Control
+            type="text"
+            placeholder="Enter your access token"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+          />
+          <Button
+            onClick={submitToken}
+            disabled={!inputValue.trim()}
+            className="mt-3"
+          >
+            Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="App">
-      <button
-        onClick={clearLocalStorage}
-        className="button button-secondary logout-button"
-      >
-        Logout
-      </button>
-      <div className="d-flex justify-content-end mb-3" style={{ gap: "10px" }}>
-        <button onClick={toggleAnalytics} className="button">
-          {showAnalytics ? "View Messages" : "View Analytics"}
-        </button>
-        {/* Only show the view toggle button when in messages view */}
-        {!showAnalytics && (
-          <button onClick={toggleView} className="button button-outline">
-            Switch to {currentView === "stephen" ? "Nadia" : "Stephen"} View
-          </button>
+      <Container>
+        {/* Menu bar with centered buttons */}
+        <Row className="justify-content-center mb-3">
+          <Col xs="auto" className="d-flex align-items-center">
+            <Button
+              variant="danger"
+              onClick={clearLocalStorage}
+              className="mx-2"
+            >
+              Logout
+            </Button>
+            <Button variant="info" onClick={toggleAnalytics} className="mx-2">
+              {showAnalytics ? "View Messages" : "View Analytics"}
+            </Button>
+            {!showAnalytics && (
+              <Button
+                variant="outline-primary"
+                onClick={toggleView}
+                className="mx-2"
+              >
+                Switch to {currentView === "stephen" ? "Nadia" : "Stephen"} View
+              </Button>
+            )}
+          </Col>
+        </Row>
+
+        {/* Render AnalyticsPage or MessagePage based on toggle */}
+        {showAnalytics ? (
+          <AnalyticsPage token={token} />
+        ) : (
+          <MessagePage token={token} currentView={currentView} />
         )}
-      </div>
-      {/* Render AnalyticsPage or MessagePage based on toggle */}
-      {showAnalytics ? (
-        <AnalyticsPage token={token} />
-      ) : (
-        <MessagePage token={token} currentView={currentView} />
-      )}
-    </div>
-  ) : (
-    <div className="auth-container">
-      <h1 className="auth-title">Message Archive</h1>
-      <div className="auth-form">
-        <input
-          type="text"
-          placeholder="Enter your access token"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
-        />
-        <button
-          onClick={submitToken}
-          className="button"
-          disabled={!inputValue.trim()}
-        >
-          Login
-        </button>
-      </div>
+      </Container>
     </div>
   );
 }
