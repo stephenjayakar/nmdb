@@ -33,7 +33,7 @@ ChartJS.register(
   ArcElement,
   WordCloudController,
   WordElement,
-  zoomPlugin,
+  zoomPlugin
 );
 
 // Example: Increase default font size
@@ -59,6 +59,8 @@ const AnalyticsPage = ({ token }) => {
     totalDays: analyticsData.num_days,
     totalWords: analyticsData.num_words_total,
     messagesPerDay: analyticsData.messages_per_day,
+    stephenResponseTime: analyticsData.average_response_time_overall.stephen,
+    nadiaResponseTime: analyticsData.average_response_time_overall.nadia,
   };
 
   // Pie Chart Data
@@ -70,10 +72,7 @@ const AnalyticsPage = ({ token }) => {
           analyticsData.num_messages.nadia,
           analyticsData.num_messages.stephen,
         ],
-        backgroundColor: [
-          "rgba(255, 99, 132, 0.6)",
-          "rgba(54, 162, 235, 0.6)",
-        ],
+        backgroundColor: ["rgba(255, 99, 132, 0.6)", "rgba(54, 162, 235, 0.6)"],
         borderWidth: 1,
       },
     ],
@@ -122,7 +121,7 @@ const AnalyticsPage = ({ token }) => {
     labels: labels,
     datasets: [
       {
-        label: 'Score',
+        label: "Score",
         data: data,
       },
     ],
@@ -140,7 +139,8 @@ const AnalyticsPage = ({ token }) => {
     (day) => analyticsData.message_frequency_per_day_per_person[day].nadia || 0
   );
   const datasetStephen = days.map(
-    (day) => analyticsData.message_frequency_per_day_per_person[day].stephen || 0
+    (day) =>
+      analyticsData.message_frequency_per_day_per_person[day].stephen || 0
   );
   const messageFrequencyData = {
     labels: days,
@@ -163,97 +163,119 @@ const AnalyticsPage = ({ token }) => {
   };
 
   // Texts per Time of Day (PST)
-  const timeLabels = Object.keys(analyticsData.message_count_by_hour);
-  const sortedTimeLabels = timeLabels.sort((a, b) => parseInt(a) - parseInt(b));
-  const timeCounts = sortedTimeLabels.map(
-    (time) => analyticsData.message_count_by_hour[time]
+const formatTime = (hour) => {
+  const intHour = parseInt(hour);
+  const period = intHour < 12 ? "AM" : "PM";
+  const formattedHour = intHour % 12 === 0 ? 12 : intHour % 12;
+  return `${formattedHour} ${period}`;
+};
+
+// Texts per Time of Day (PST)
+const timeLabels = Object.keys(analyticsData.message_count_by_hour);
+const sortedTimeLabels = timeLabels.sort((a, b) => parseInt(a) - parseInt(b));
+const timeCounts = sortedTimeLabels.map(
+  (time) => analyticsData.message_count_by_hour[time]
+);
+
+// Map sorted time labels to 12-hour format
+const formattedTimeLabels = sortedTimeLabels.map(formatTime);
+
+const textsPerTimeData = {
+  labels: formattedTimeLabels,
+  datasets: [
+    {
+      label: "Texts per Time (PST)",
+      data: timeCounts,
+      backgroundColor: "rgba(255, 206, 86, 0.6)",
+    },
+  ],
+};
+
+
+  const responseDays = Object.keys(
+    analyticsData.average_response_time_per_day
+  ).sort((a, b) => new Date(a) - new Date(b));
+  const avgResponseNadia = responseDays.map(
+    (day) => analyticsData.average_response_time_per_day[day].nadia / 60 || 0
   );
-  const textsPerTimeData = {
-    labels: sortedTimeLabels,
+  const avgResponseStephen = responseDays.map(
+    (day) => analyticsData.average_response_time_per_day[day].stephen / 60 || 0
+  );
+  const avgResponseTimeData = {
+    labels: responseDays,
     datasets: [
       {
-        label: "Texts per Time (PST)",
-        data: timeCounts,
-        backgroundColor: "rgba(255, 206, 86, 0.6)",
+        label: "Nadia",
+        data: avgResponseNadia,
+        borderColor: "rgba(255, 99, 132, 1)",
+        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        fill: false,
+      },
+      {
+        label: "Stephen",
+        data: avgResponseStephen,
+        borderColor: "rgba(54, 162, 235, 1)",
+        backgroundColor: "rgba(54, 162, 235, 0.2)",
+        fill: false,
       },
     ],
   };
 
-  // TODO: temp
-  // analyticsData.average_response_time_per_day = {
-  //   "2023-09-01": { "nadia": 25, "stephen": 40 },
-  //   "2023-09-02": { "nadia": 30, "stephen": 35 },
-  //   "2023-09-03": { "nadia": 20, "stephen": 45 }
-  // };
-  // NEW: Average Response Time per Day Data
-  const responseDays = Object.keys(analyticsData.average_response_time_per_day).sort(
-    (a, b) => new Date(a) - new Date(b)
-  );
-  const avgResponseNadia = responseDays.map(
-    (day) => analyticsData.average_response_time_per_day[day].nadia / 60 || 0
-  );
-  const avgResponseStephen = responseDays.map(
-    (day) => analyticsData.average_response_time_per_day[day].stephen / 60 || 0
-  );
-  const avgResponseTimeData = {
-    labels: responseDays,
-    datasets: [
-      {
-       label: "Nadia",
-       data: avgResponseNadia,
-       borderColor: "rgba(255, 99, 132, 1)",
-       backgroundColor: "rgba(255, 99, 132, 0.2)",
-       fill: false,
-      },
-      {
-       label: "Stephen",
-       data: avgResponseStephen,
-       borderColor: "rgba(54, 162, 235, 1)",
-       backgroundColor: "rgba(54, 162, 235, 0.2)",
-       fill: false,
-      },
-    ],
-  };
-
   return (
     <Container className="lovey-dashboard my-4">
       <h2 className="lovey-header mb-4">💖 Our Message Memories 💖</h2>
-
       {/* First Row: Totals & Pie Chart */}
-      <Row>
+      <Row className="my-4">
         <Col md={6} className="mb-4">
-          <Card className="lovey-card mb-4">
-            <Card.Header>Totals</Card.Header>
+          <Card className="text-center shadow-sm border-0">
+            <Card.Header className="bg-primary text-white">Totals</Card.Header>
             <Card.Body>
               <Row>
                 <Col>
-                  <strong>Total Messages:</strong> {totals.totalMessages}
+                  <h5>Total Messages</h5>
+                  <p>{totals.totalMessages}</p>
                 </Col>
                 <Col>
-                  <strong># of Days:</strong> {totals.totalDays}
+                  <h5># of Days</h5>
+                  <p>{totals.totalDays}</p>
                 </Col>
               </Row>
               <Row className="mt-3">
                 <Col>
-                  <strong># of Words:</strong> {totals.totalWords}
+                  <h5># of Words</h5>
+                  <p>{totals.totalWords}</p>
                 </Col>
                 <Col>
-                  <strong>Messages per Day:</strong> {totals.messagesPerDay}
+                  <h5>Messages per Day</h5>
+                  <p>{totals.messagesPerDay}</p>
+                </Col>
+              </Row>
+              <Row className="mt-3">
+                <Col>
+                  <h5>Stephen's Avg. Response Time</h5>
+                  <p>{totals.stephenResponseTime} seconds</p>
+                </Col>
+              </Row>
+              <Row className="mt-2">
+                <Col>
+                  <h5>Nadia's Avg. Response Time</h5>
+                  <p>{totals.nadiaResponseTime} seconds</p>
                 </Col>
               </Row>
             </Card.Body>
           </Card>
         </Col>
         <Col md={6} className="mb-4">
-          <Card className="lovey-card mb-4">
-            <Card.Header>Who Sent More Messages?</Card.Header>
+          <Card className="text-center shadow-sm border-0">
+            <Card.Header className="bg-success text-white">
+              Who Sent More Messages?
+            </Card.Header>
             <Card.Body>
               <Pie data={pieData} />
             </Card.Body>
           </Card>
         </Col>
       </Row>
-
       {/* Word Cloud Section commented out
       <Row className="mb-4">
         <Col md={12}>
@@ -277,7 +299,6 @@ const AnalyticsPage = ({ token }) => {
         </Col>
     </Row>
     */}
-
       {/* Emoji Frequency & Word Frequency Bar Charts */}
       <Row>
         <Col md={6} className="mb-4">
@@ -342,83 +363,91 @@ const AnalyticsPage = ({ token }) => {
           </Card>
         </Col>
       </Row>
-
       {/* Message Frequency per Day Line Chart */}
-    <Card className="lovey-card mb-4">
-      <Card.Header>
-        Message Frequency per Day (Nadia & Stephen)
-      </Card.Header>
-      <Col md={12} className="mb-4">
-        <Card.Body>
-          <Line
-            data={messageFrequencyData}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: { position: "top" },
-                title: { display: true, text: "Messages per Day (try zooming!)" },
-                // Enable zooming and panning on the x-axis:
-                zoom: {
-                  pan: {
-                    enabled: true,
-                    mode: "x",
+      <Card className="lovey-card mb-4">
+        <Card.Header>Message Frequency per Day (Nadia & Stephen)</Card.Header>
+        <Col md={12} className="mb-4">
+          <Card.Body>
+            <Line
+              data={messageFrequencyData}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { position: "top" },
+                  title: {
+                    display: true,
+                    text: "Messages per Day (try zooming!)",
                   },
+                  // Enable zooming and panning on the x-axis:
                   zoom: {
-                    wheel: { enabled: true }, // Allow zooming with the mouse wheel
-                    pinch: { enabled: true },
-                    mode: "x",
+                    pan: {
+                      enabled: true,
+                      mode: "x",
+                    },
+                    zoom: {
+                      wheel: { enabled: true }, // Allow zooming with the mouse wheel
+                      pinch: { enabled: true },
+                      mode: "x",
+                    },
                   },
                 },
-              },
-            }}
-          />
-        </Card.Body>
-      </Col>
-    </Card>
-
-      {/* NEW: Average Response Time per Day Line Chart */}
-  <Card className="lovey-card mb-4">
-    <Card.Header>Average Response Time per Day (Nadia & Stephen)</Card.Header>
-    <Col md={12} className="mb-4">
-      <Card.Body>
-        <Line
-          data={avgResponseTimeData}
-          options={{
-            responsive: true,
-            plugins: {
-             legend: { position: "top" },
-             title: {
-              display: true,
-              text: "Average Response Time per Day (in minutes)",
-            },
-             zoom: {
-              pan: { enabled: true, mode: "x" },
-              zoom: {
-               wheel: { enabled: true },
-               pinch: { enabled: true },
-               mode: "x",
-             },
-            },
-                      }}}
-        />
-      </Card.Body>
-    </Col>
-  </Card>
-
-
+              }}
+            />
+          </Card.Body>
+        </Col>
+      </Card>
+        {/* NEW: Average Response Time per Day Line Chart */}
+        
+      <Card className="lovey-card mb-4">
+            
+        <Card.Header>
+          Average Response Time per Day (Nadia & Stephen)
+        </Card.Header>
+            
+        <Col md={12} className="mb-4">
+                
+          <Card.Body>
+                    
+            <Line
+              data={avgResponseTimeData}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { position: "top" },
+                  title: {
+                    display: true,
+                    text: "Average Response Time per Day (in minutes)",
+                  },
+                  zoom: {
+                    pan: { enabled: true, mode: "x" },
+                    zoom: {
+                      wheel: { enabled: true },
+                      pinch: { enabled: true },
+                      mode: "x",
+                    },
+                  },
+                },
+              }}
+            />
+                  
+          </Card.Body>
+              
+        </Col>
+          
+      </Card>
       {/* Texts per Time of Day Bar Chart */}
       <Card className="lovey-card mb-4">
         <Card.Header>Texts per Time of Day (PST)</Card.Header>
         <Col md={12} className="mb-4">
-        <Card.Body>
-          <Bar
-            data={textsPerTimeData}
-            options={{
-              responsive: true,
-              plugins: { legend: { display: false } },
-            }}
-          />
-        </Card.Body>
+          <Card.Body>
+            <Bar
+              data={textsPerTimeData}
+              options={{
+                responsive: true,
+                plugins: { legend: { display: false } },
+              }}
+            />
+          </Card.Body>
         </Col>
       </Card>
     </Container>

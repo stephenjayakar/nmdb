@@ -1,4 +1,3 @@
-from message import load_messages_from_merged
 import sys
 import collections
 import re
@@ -6,6 +5,7 @@ from datetime import datetime, timedelta
 import emoji
 import json
 from pathlib import Path
+from message import load_messages_from_merged
 
 skip_word_list = [
     "[",
@@ -117,26 +117,23 @@ def average_response_time_per_day(messages):
     for msg in messages:
         msg_by_day[msg.timestamp.date()].append(msg)
 
-    # Prepare result dictionary
-    result = {}
+    breakdown = {}   # holds per-sender averages for each day
+    total_avg = {}   # holds the combined average response time for each day
 
-    # Process only days where messages exist
+    # Process each day that has messages
     for day, day_msgs in msg_by_day.items():
-        # Sort messages for the day by timestamp
+        # Sort messages in the day by timestamp order
         day_msgs.sort(key=lambda m: m.timestamp)
-        # Initialize separate accumulators for stephen and nadia
         stephen_total = 0
         stephen_count = 0
         nadia_total = 0
         nadia_count = 0
         prev_msg = None
-        # Loop through messages for the day
         for m in day_msgs:
-            if prev_msg is not None and m.sender.lower() != prev_msg.sender.lower():
-                # Calculate the response interval in seconds
+            if prev_msg and m.sender.lower() != prev_msg.sender.lower():
                 diff = (m.timestamp - prev_msg.timestamp).total_seconds()
-                # Only count this response pair if the difference is 1 day or less
-                if diff <= 86400:
+                # Only count if response time is <= 1 day
+                if diff <= 86400:  
                     if m.sender.lower() == "stephen" and prev_msg.sender.lower() == "nadia":
                         stephen_total += diff
                         stephen_count += 1
@@ -145,12 +142,57 @@ def average_response_time_per_day(messages):
                         nadia_count += 1
             prev_msg = m
 
-        # Only set the day's averages if we have at least one valid response pair
         if stephen_count > 0 or nadia_count > 0:
             stephen_avg = stephen_total / stephen_count if stephen_count > 0 else 0
             nadia_avg = nadia_total / nadia_count if nadia_count > 0 else 0
-            result[day] = {"stephen": stephen_avg, "nadia": nadia_avg}
-    return result
+            combined_count = stephen_count + nadia_count
+            combined_total = stephen_total + nadia_total
+            combined_avg = combined_total / combined_count if combined_count > 0 else 0
+
+            breakdown[day] = {"stephen": stephen_avg, "nadia": nadia_avg}
+            total_avg[day] = combined_avg
+
+    return breakdown, total_avg
+
+
+def overall_average_response_time(messages):
+    """Compute overall (global) response times.
+       Returns a dict with keys:
+         "stephen": average response time when Stephen responds,
+         "nadia": average response time when Nadia responds,
+         "combined": overall average response time over all valid responses.
+       Only intervals <= 1 day (86400 sec) are considered.
+    """
+    messages_sorted = sorted(messages, key=lambda m: m.timestamp)
+    stephen_total = 0
+    stephen_count = 0
+    nadia_total = 0
+    nadia_count = 0
+    prev_msg = None
+    for m in messages_sorted:
+        if prev_msg and m.sender.lower() != prev_msg.sender.lower():
+            diff = (m.timestamp - prev_msg.timestamp).total_seconds()
+            if diff <= 86400:
+                if m.sender.lower() == "stephen" and prev_msg.sender.lower() == "nadia":
+                    stephen_total += diff
+                    stephen_count += 1
+                elif m.sender.lower() == "nadia" and prev_msg.sender.lower() == "stephen":
+                    nadia_total += diff
+                    nadia_count += 1
+        prev_msg = m
+
+    overall_stats = {}
+    overall_stats["stephen"] = stephen_total / stephen_count if stephen_count > 0 else 0
+    overall_stats["nadia"] = nadia_total / nadia_count if nadia_count > 0 else 0
+    combined_count = stephen_count + nadia_count
+    combined_total = stephen_total + nadia_total
+    overall_stats["combined"] = combined_total / combined_count if combined_count > 0 else 0
+
+    print("Overall response time averages:")
+    print(f"Stephen responds in {overall_stats['stephen']:.2f} seconds on average")
+    print(f"Nadia responds in {overall_stats['nadia']:.2f} seconds on average")
+    print(f"Combined, responses average {overall_stats['combined']:.2f} seconds")
+    return overall_stats
 
 
 argument = sys.argv[1]
@@ -167,8 +209,10 @@ elif argument == "words":
     calculate_word_frequencies(messages, top_n=20)
 elif argument == "person-day":
     message_frequency_per_day_per_person(messages)
+elif argument == "hour":
+    message_count_by_hour(messages)
 elif argument == "all":
-    # Call all analytics functions (prints output as before)
+    # Call all analytics functions 
     tw = total_word_count(messages)
     msg_counts = message_counts(messages)
     nd = num_days(messages)
@@ -177,9 +221,13 @@ elif argument == "all":
     wf = calculate_word_frequencies(messages)
     mfpdp = message_frequency_per_day_per_person(messages)
     mcbh = message_count_by_hour(messages)
-    art = average_response_time_per_day(messages)  # our new calculation
+    
+    # Get per-day response time breakdows
+    art_breakdown, art_total = average_response_time_per_day(messages)
+    # Get overall/global averages (how fast Stephen, Nadia, and combined respond)
+    overall_rt = overall_average_response_time(messages)
 
-    # Prepare JSON output. Note we convert some keys to strings for JSON compatibility.
+    # Prepare JSON output. Convert keys (days/hours) to strings for JSON.
     json_results = {
         "num_words_total": tw,
         "num_messages": {
@@ -198,8 +246,12 @@ elif argument == "all":
             str(hour).zfill(2): count for hour, count in mcbh.items()
         },
         "average_response_time_per_day": {
-            str(day): art[day] for day in sorted(art)
+            str(day): art_breakdown[day] for day in sorted(art_breakdown)
         },
+        "average_total_response_time_per_day": {
+            str(day): art_total[day] for day in sorted(art_total)
+        },
+        "average_response_time_overall": overall_rt,
     }
 
     # Write JSON output to ../output/analytics.json
@@ -209,7 +261,6 @@ elif argument == "all":
         json.dump([json_results], f, ensure_ascii=False, indent=2)
 
     print(f"Analytics JSON written to {output_path}")
-
 else:
     print(
         "Please specify one of the valid arguments: totals, emoji, words, person-day, hour, all"
