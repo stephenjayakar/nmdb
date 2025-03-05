@@ -1,6 +1,8 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 
+const N = 40;
+
 const authCheck = async (ctx: any, token: string) => {
     const tokenExists =
       (await ctx.db
@@ -48,14 +50,14 @@ export const fasterSearch = query({
 
     let messages = [];
     if (args.searchTerm == "") {
-      messages = await ctx.db.query("messages").take(40);
+      messages = await ctx.db.query("messages").take(N);
     } else {
       messages = await ctx.db
         .query("messages")
         .withSearchIndex("search_message", (q) =>
           q.search("message", args.searchTerm)
         )
-        .take(40);
+        .take(N);
     }
     return messages;
   },
@@ -72,15 +74,14 @@ export const getMessagesAroundDate = query({
       return [];
     }
 
-    const limit = 20;
     let query = ctx.db.query("messages");
 
     let messages;
     if (args.direction === 'before') {
-      messages = await query.withIndex("by_timestamp", (q) => q.lt("timestamp", args.timestamp)).order('desc').take(limit)!;
+      messages = await query.withIndex("by_timestamp", (q) => q.lt("timestamp", args.timestamp)).order('desc').take(N)!;
       messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     } else {
-      messages = await query.withIndex("by_timestamp", (q) => q.gt("timestamp", args.timestamp)).order('asc').take(limit)!;
+      messages = await query.withIndex("by_timestamp", (q) => q.gt("timestamp", args.timestamp)).order('asc').take(N)!;
     }
 
     return messages;
@@ -97,8 +98,7 @@ export const getInitialMessages = query({
       return [];
     }
 
-    const limit = 20;
-    const messages = await ctx.db.query("messages").withIndex("by_timestamp").order('asc').take(limit)!;
+    const messages = await ctx.db.query("messages").withIndex("by_timestamp").order('asc').take(N)!;
     return messages;
   }
 });
@@ -112,10 +112,9 @@ export const reloadMessages = query({
     if (!authCheck(ctx, args.token)) {
       return [];
     }
-    const limit = 20;
     const messages = await ctx.db.query("messages")
           .withIndex("by_timestamp", (q) => q.gte("timestamp", args.timestamp))
-          .order('asc').take(limit)!;
+          .order('asc').take(N)!;
     return messages;
   }});
 

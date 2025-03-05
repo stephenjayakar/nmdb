@@ -5,7 +5,6 @@ import { api } from "./convex/_generated/api";
 import { Button, Spinner } from "react-bootstrap";
 import SearchBarDatePicker from "./SearchBarDatePicker";
 
-// A helper for formatting timestamps.
 const formatTimestamp = (timestamp) => {
   try {
     const date = new Date(timestamp);
@@ -26,20 +25,23 @@ const MessagePage = ({ token, currentView }) => {
   const convex = useConvex();
   const [messages, setMessages] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isSearchActive, setIsSearchActive] = useState(false);
   const observerRef = useRef(null);
+  // Create a ref for SearchBarDatePicker
+  const searchBarRef = useRef(null);
 
   const timelineBounds = useQuery(api.messages.timelineBounds, { token });
   const initialMessages = useQuery(api.messages.getInitialMessages, { token });
 
-  // When the initial messages load, store them.
   useEffect(() => {
     if (initialMessages) {
       setMessages(initialMessages);
     }
   }, [initialMessages]);
 
-  // Set up the infinite scroll observer.
   useEffect(() => {
+    if (isSearchActive) return; // Do not set up the scroll observer when searching
+
     const observer = new IntersectionObserver(
       async (entries) => {
         const target = entries[0];
@@ -51,11 +53,13 @@ const MessagePage = ({ token, currentView }) => {
       },
       { threshold: 0.1 }
     );
+
     if (observerRef.current) {
       observer.observe(observerRef.current);
     }
+
     return () => observer.disconnect();
-  }, [messages, isLoadingMore]);
+  }, [messages, isLoadingMore, isSearchActive]);
 
   const loadOlder = async () => {
     const minTS = messages[0].timestamp;
@@ -77,7 +81,13 @@ const MessagePage = ({ token, currentView }) => {
     setMessages([...messages, ...newerMessages]);
   };
 
+  // When reloading by timestamp (from date selection or message click), we also want to clear the search.
   const reloadWithTimestamp = async (ts) => {
+    // If a date is clicked or timestamp is selected, clear the search bar.
+    if (searchBarRef.current) {
+      searchBarRef.current.clearSearch();
+    }
+    setIsSearchActive(false);
     const newMessages = await convex.query(api.messages.reloadMessages, {
       token,
       timestamp: ts,
@@ -86,6 +96,7 @@ const MessagePage = ({ token, currentView }) => {
   };
 
   const handleSearch = async (query) => {
+    setIsSearchActive(true);
     const newMessages = await convex.query(api.messages.fasterSearch, {
       token,
       searchTerm: query,
@@ -94,12 +105,15 @@ const MessagePage = ({ token, currentView }) => {
   };
 
   const handleDateChange = (date) => {
+    // Clear any active search and update messages by date.
+    setIsSearchActive(false);
     reloadWithTimestamp(date);
   };
 
   return (
     <div className="container">
       <SearchBarDatePicker
+        ref={searchBarRef}
         onSearch={handleSearch}
         onDateChange={handleDateChange}
       />
@@ -111,9 +125,12 @@ const MessagePage = ({ token, currentView }) => {
         </div>
       ) : (
         <>
-          <Button variant="primary" onClick={loadOlder} className="mb-3">
-            Load more
-          </Button>
+          {/* Only render the Load More button if not searching */}
+          {!isSearchActive && (
+            <Button variant="primary" onClick={loadOlder} className="mb-3">
+              Load more
+            </Button>
+          )}
           <MessageList
             messages={messages}
             onTimestampClick={reloadWithTimestamp}
@@ -142,7 +159,6 @@ const MessagePage = ({ token, currentView }) => {
 const MessageList = ({ messages, onTimestampClick, currentView }) => {
   if (!messages.length) return null;
 
-  // Converts any links in the text into clickable links.
   const makeLinksClickable = (text, isSender) => {
     const linkColor = isSender ? "#ffffff" : "#007bff";
     const linkStyle = `color: ${linkColor}; text-decoration: underline;`;

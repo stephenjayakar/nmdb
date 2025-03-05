@@ -1,9 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, forwardRef, useImperativeHandle } from "react";
 import { Form, InputGroup, Button } from "react-bootstrap";
 
-const SearchBarDatePicker = ({ onSearch, onDateChange }) => {
+const SearchBarDatePicker = forwardRef(({ onSearch, onDateChange }, ref) => {
   const [searchText, setSearchText] = useState("");
   const [date, setDate] = useState("");
+
+  // Expose a clear method so the parent can clear the search bar.
+  useImperativeHandle(ref, () => ({
+    clearSearch: () => {
+      setSearchText("");
+    },
+  }));
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -16,6 +23,8 @@ const SearchBarDatePicker = ({ onSearch, onDateChange }) => {
   const handleDateChange = (e) => {
     const selectedDate = e.target.value;
     setDate(selectedDate);
+    // Clear search text when a date is selected
+    setSearchText("");
     if (onDateChange) {
       onDateChange(selectedDate);
     }
@@ -44,6 +53,6 @@ const SearchBarDatePicker = ({ onSearch, onDateChange }) => {
       />
     </div>
   );
-};
+});
 
 export default SearchBarDatePicker;

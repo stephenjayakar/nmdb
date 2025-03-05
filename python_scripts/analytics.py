@@ -6,6 +6,7 @@ import emoji
 import json
 from pathlib import Path
 from message import load_messages_from_merged
+import matplotlib.pyplot as plt
 
 skip_word_list = [
     "[",
@@ -94,7 +95,7 @@ def message_frequency_per_day_per_person(messages):
         freq[day][person] += 1
 
     print("Message frequency per day per person (sample):")
-    for day in sorted(freq)[:5]:  # only show first 5 days as sample
+    for day in sorted(freq)[:5]:
         print(f"{day}: {dict(freq[day])}")
     return freq
 
@@ -112,7 +113,7 @@ def message_count_by_hour(messages):
 
 
 def average_response_time_per_day(messages):
-    # Group messages by day
+    # Group messages by day.
     msg_by_day = collections.defaultdict(list)
     for msg in messages:
         msg_by_day[msg.timestamp.date()].append(msg)
@@ -120,9 +121,7 @@ def average_response_time_per_day(messages):
     breakdown = {}   # holds per-sender averages for each day
     total_avg = {}   # holds the combined average response time for each day
 
-    # Process each day that has messages
     for day, day_msgs in msg_by_day.items():
-        # Sort messages in the day by timestamp order
         day_msgs.sort(key=lambda m: m.timestamp)
         stephen_total = 0
         stephen_count = 0
@@ -132,7 +131,6 @@ def average_response_time_per_day(messages):
         for m in day_msgs:
             if prev_msg and m.sender.lower() != prev_msg.sender.lower():
                 diff = (m.timestamp - prev_msg.timestamp).total_seconds()
-                # Only count if response time is <= 1 day
                 if diff <= 86400:  
                     if m.sender.lower() == "stephen" and prev_msg.sender.lower() == "nadia":
                         stephen_total += diff
@@ -156,13 +154,6 @@ def average_response_time_per_day(messages):
 
 
 def overall_average_response_time(messages):
-    """Compute overall (global) response times.
-       Returns a dict with keys:
-         "stephen": average response time when Stephen responds,
-         "nadia": average response time when Nadia responds,
-         "combined": overall average response time over all valid responses.
-       Only intervals <= 1 day (86400 sec) are considered.
-    """
     messages_sorted = sorted(messages, key=lambda m: m.timestamp)
     stephen_total = 0
     stephen_count = 0
@@ -195,6 +186,88 @@ def overall_average_response_time(messages):
     return overall_stats
 
 
+def detect_new_word_bursts(messages, save_to_png=False):
+    """
+    Detect words whose usage bursts after their first appearance.
+
+    Only words that:
+      - are used more than 50 times in total across all messages, AND
+      - do not appear in the first two months of overall conversation
+    are considered.
+
+    For each qualifying word, usage counts are bucketed by month.
+    A burst is detected when, for any month after the first month of appearance,
+    the word usage hits at least 5× the count in its first month.
+    
+    If save_to_png is True, the timeline for each bursting word is saved as a PNG
+    in the "../output" directory; otherwise, the plot is shown interactively.
+    """
+    ascii_pattern = re.compile(r"\b[a-zA-Z]+\b")
+    global_start = min(msg.timestamp for msg in messages)
+    boundary_date = global_start + timedelta(days=60)
+
+    word_month_counts = collections.defaultdict(lambda: collections.defaultdict(int))
+    for msg in messages:
+        if any(skip in msg.message for skip in skip_word_list):
+            continue
+        month_key = datetime(msg.timestamp.year, msg.timestamp.month, 1)
+        words = ascii_pattern.findall(msg.message.lower())
+        for word in words:
+            word_month_counts[word][month_key] += 1
+
+    bursting_words = {}
+    for word, month_counts in word_month_counts.items():
+        total_usage = sum(month_counts.values())
+        if total_usage <= 50:
+            continue
+        months_sorted = sorted(month_counts.keys())
+        if not months_sorted:
+            continue
+        first_month = months_sorted[0]
+        if first_month < boundary_date:
+            continue
+        base_count = month_counts[first_month]
+        burst_found = False
+        for m in months_sorted[1:]:
+            if month_counts[m] >= 5 * base_count:
+                burst_found = True
+                break
+        if burst_found:
+            bursting_words[word] = month_counts
+
+    for word, month_counts in bursting_words.items():
+        months_sorted = sorted(month_counts.keys())
+        counts = [month_counts[m] for m in months_sorted]
+
+        plt.figure()
+        plt.plot(months_sorted, counts, marker='o', linestyle='-')
+        plt.title(f"Usage Timeline for '{word}'")
+        plt.xlabel("Month")
+        plt.ylabel("Count")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        if save_to_png:
+            output_path = Path("../output")
+            output_path.mkdir(parents=True, exist_ok=True)
+            graph_file = output_path / f"{word}_burst.png"
+            plt.savefig(graph_file)
+            plt.close()
+            print(f"Graph for word '{word}' saved to {graph_file}")
+        else:
+            plt.show()
+            plt.close()
+
+    if bursting_words:
+        print("Bursting words detected:")
+        for word in bursting_words:
+            print(f"  {word}")
+    else:
+        print("No bursting words were detected.")
+
+    return bursting_words
+
+
 argument = sys.argv[1]
 messages = load_messages_from_merged()
 
@@ -211,8 +284,10 @@ elif argument == "person-day":
     message_frequency_per_day_per_person(messages)
 elif argument == "hour":
     message_count_by_hour(messages)
+elif argument == "burst":
+    detect_new_word_bursts(messages)
 elif argument == "all":
-    # Call all analytics functions 
+    # Run all analytics functions.
     tw = total_word_count(messages)
     msg_counts = message_counts(messages)
     nd = num_days(messages)
@@ -222,12 +297,18 @@ elif argument == "all":
     mfpdp = message_frequency_per_day_per_person(messages)
     mcbh = message_count_by_hour(messages)
     
-    # Get per-day response time breakdows
     art_breakdown, art_total = average_response_time_per_day(messages)
-    # Get overall/global averages (how fast Stephen, Nadia, and combined respond)
     overall_rt = overall_average_response_time(messages)
+    
+    # Detect bursting words (plots are saved as PNG) and capture the series.
+    bursting_words = detect_new_word_bursts(messages, save_to_png=True)
+    # Convert bursting words month_counts to JSON serializable form.
+    bursting_word_series = {}
+    for word, month_counts in bursting_words.items():
+        # Sort month_counts by date and convert datetime to string.
+        series = [[m.strftime("%Y-%m-%d"), count] for m, count in sorted(month_counts.items())]
+        bursting_word_series[word] = series
 
-    # Prepare JSON output. Convert keys (days/hours) to strings for JSON.
     json_results = {
         "num_words_total": tw,
         "num_messages": {
@@ -252,9 +333,9 @@ elif argument == "all":
             str(day): art_total[day] for day in sorted(art_total)
         },
         "average_response_time_overall": overall_rt,
+        "bursting_word_series": bursting_word_series,  # New data series added
     }
 
-    # Write JSON output to ../output/analytics.json
     output_path = Path("../output/analytics.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as f:
@@ -263,5 +344,5 @@ elif argument == "all":
     print(f"Analytics JSON written to {output_path}")
 else:
     print(
-        "Please specify one of the valid arguments: totals, emoji, words, person-day, hour, all"
+        "Please specify one of the valid arguments: totals, emoji, words, person-day, hour, all, burst"
     )
