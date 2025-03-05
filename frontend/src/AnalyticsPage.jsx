@@ -1,6 +1,6 @@
 import React from "react";
 import { Container, Row, Col, Card, Spinner } from "react-bootstrap";
-import { Pie, Bar, Line, Chart } from "react-chartjs-2";
+import { Pie, Bar, Line } from "react-chartjs-2";
 import zoomPlugin from "chartjs-plugin-zoom";
 import {
   Chart as ChartJS,
@@ -12,15 +12,17 @@ import {
   Title,
   Tooltip,
   Legend,
+  TimeScale,
   ArcElement,
 } from "chart.js";
+import "chartjs-adapter-moment";
 import { WordCloudController, WordElement } from "chartjs-chart-wordcloud"; // Word Cloud Plugin
 import "./AnalyticsPage.css"; // Your custom styles
 
 import { useQuery } from "convex/react";
 import { api } from "./convex/_generated/api";
 
-// Register ChartJS components and WordCloud plugin
+// Register ChartJS components and plugins
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -30,6 +32,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
+  TimeScale,
   ArcElement,
   WordCloudController,
   WordElement,
@@ -63,7 +66,7 @@ const AnalyticsPage = ({ token }) => {
     nadiaResponseTime: analyticsData.average_response_time_overall.nadia,
   };
 
-  // Pie Chart Data
+  // Pie Chart Data for messages per sender.
   const pieData = {
     labels: ["Nadia", "Stephen"],
     datasets: [
@@ -72,13 +75,16 @@ const AnalyticsPage = ({ token }) => {
           analyticsData.num_messages.nadia,
           analyticsData.num_messages.stephen,
         ],
-        backgroundColor: ["rgba(255, 99, 132, 0.6)", "rgba(54, 162, 235, 0.6)"],
+        backgroundColor: [
+          "rgba(255, 99, 132, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+        ],
         borderWidth: 1,
       },
     ],
   };
 
-  // Emoji Frequency Bar Chart Data
+  // Emoji Frequency Bar Chart Data.
   const emojiLabels = analyticsData.emoji_frequency.map((item) => item[0]);
   const emojiCounts = analyticsData.emoji_frequency.map((item) => item[1]);
   const emojiData = {
@@ -92,10 +98,10 @@ const AnalyticsPage = ({ token }) => {
     ],
   };
 
-  // For scrollable horizontal bar chart height calculation:
+  // For scrollable horizontal bar chart height calculation.
   const emojiChartHeight = Math.max(600, emojiLabels.length * 25);
 
-  // Word Frequency Bar Chart Data
+  // Word Frequency Bar Chart Data.
   const wordLabels = analyticsData.word_frequency.map((item) => item[0]);
   const wordCounts = analyticsData.word_frequency.map((item) => item[1]);
   const wordData = {
@@ -109,32 +115,10 @@ const AnalyticsPage = ({ token }) => {
     ],
   };
 
-  const labels = [];
-  const data = [];
-
-  // Populate the arrays with entries from the word frequencies map
-  for (const [_, tpl] of Object.entries(analyticsData.word_frequency)) {
-    labels.push(tpl[0]);
-    data.push(tpl[1] / 100);
-  }
-  const wordCloudData = {
-    labels: labels,
-    datasets: [
-      {
-        label: "Score",
-        data: data,
-      },
-    ],
-  };
-
-  // For now, we use testData.
-  // const wordCloudData = testData;
-
-  // Message Frequency per Day per Person
+  // Message Frequency per Day per Person Line Chart.
   const days = Object.keys(
     analyticsData.message_frequency_per_day_per_person
   ).sort((a, b) => new Date(a) - new Date(b));
-
   const datasetNadia = days.map(
     (day) => analyticsData.message_frequency_per_day_per_person[day].nadia || 0
   );
@@ -162,36 +146,31 @@ const AnalyticsPage = ({ token }) => {
     ],
   };
 
-  // Texts per Time of Day (PST)
-const formatTime = (hour) => {
-  const intHour = parseInt(hour);
-  const period = intHour < 12 ? "AM" : "PM";
-  const formattedHour = intHour % 12 === 0 ? 12 : intHour % 12;
-  return `${formattedHour} ${period}`;
-};
+  // Texts per Time of Day (PST) Bar Chart Data.
+  const formatTime = (hour) => {
+    const intHour = parseInt(hour);
+    const period = intHour < 12 ? "AM" : "PM";
+    const formattedHour = intHour % 12 === 0 ? 12 : intHour % 12;
+    return `${formattedHour} ${period}`;
+  };
+  const timeLabels = Object.keys(analyticsData.message_count_by_hour);
+  const sortedTimeLabels = timeLabels.sort((a, b) => parseInt(a) - parseInt(b));
+  const timeCounts = sortedTimeLabels.map(
+    (time) => analyticsData.message_count_by_hour[time]
+  );
+  const formattedTimeLabels = sortedTimeLabels.map(formatTime);
+  const textsPerTimeData = {
+    labels: formattedTimeLabels,
+    datasets: [
+      {
+        label: "Texts per Time (PST)",
+        data: timeCounts,
+        backgroundColor: "rgba(255, 206, 86, 0.6)",
+      },
+    ],
+  };
 
-// Texts per Time of Day (PST)
-const timeLabels = Object.keys(analyticsData.message_count_by_hour);
-const sortedTimeLabels = timeLabels.sort((a, b) => parseInt(a) - parseInt(b));
-const timeCounts = sortedTimeLabels.map(
-  (time) => analyticsData.message_count_by_hour[time]
-);
-
-// Map sorted time labels to 12-hour format
-const formattedTimeLabels = sortedTimeLabels.map(formatTime);
-
-const textsPerTimeData = {
-  labels: formattedTimeLabels,
-  datasets: [
-    {
-      label: "Texts per Time (PST)",
-      data: timeCounts,
-      backgroundColor: "rgba(255, 206, 86, 0.6)",
-    },
-  ],
-};
-
-
+  // Average Response Time per Day Line Chart Data.
   const responseDays = Object.keys(
     analyticsData.average_response_time_per_day
   ).sort((a, b) => new Date(a) - new Date(b));
@@ -221,6 +200,74 @@ const textsPerTimeData = {
     ],
   };
 
+  // ★ NEW: Bursting Words Over Time Line Chart ★
+  // We assume analyticsData.bursting_word_series is an object where each key is a word
+  // and each value is an array of [date, count] pairs.
+  const burstingWords = analyticsData.bursting_word_series || {};
+  // Create datasets – one per bursting word.
+  // Here we use a small array of colors and cycle through them.
+  const presetColors = [
+    "rgba(255, 99, 132, 1)",
+    "rgba(54, 162, 235, 1)",
+    "rgba(255, 206, 86, 1)",
+    "rgba(75, 192, 192, 1)",
+    "rgba(153, 102, 255, 1)",
+    "rgba(255, 159, 64, 1)",
+  ];
+  const burstingWordDatasets = [];
+  let colorIndex = 0;
+
+  // Each dataset is built as an array of objects {x, y} so that ChartJS' time scale can parse it.
+  for (const [word, series] of Object.entries(burstingWords)) {
+    const dataset = {
+      label: word,
+      data: series.map(([date, count]) => ({ x: date, y: count })),
+      borderColor: presetColors[colorIndex % presetColors.length],
+      backgroundColor: presetColors[colorIndex % presetColors.length],
+      fill: false,
+    };
+    burstingWordDatasets.push(dataset);
+    colorIndex++;
+  }
+
+  // If you want to show a unified x-axis with time values, we do not need to declare labels;
+  // the x values come directly from each dataset’s data.
+  const burstingWordChartData = {
+    datasets: burstingWordDatasets,
+  };
+
+  const burstingWordChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: { position: "top" },
+      title: {
+        display: true,
+        text: "Bursting Words Over Time",
+      },
+      zoom: {
+        pan: { enabled: true, mode: "x" },
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: "x",
+        },
+      },
+    },
+    scales: {
+      x: {
+        type: "time",
+        time: {
+          parser: "YYYY-MM-DD",
+          tooltipFormat: "ll",
+        },
+        title: { display: true, text: "Month" },
+      },
+      y: {
+        title: { display: true, text: "Usage Count" },
+      },
+    },
+  };
+
   return (
     <Container className="lovey-dashboard my-4">
       <h2 className="lovey-header mb-4">💖 Our Message Memories 💖</h2>
@@ -228,7 +275,9 @@ const textsPerTimeData = {
       <Row className="my-4">
         <Col md={6} className="mb-4">
           <Card className="text-center shadow-sm border-0">
-            <Card.Header className="bg-primary text-white">Totals</Card.Header>
+            <Card.Header className="bg-primary text-white">
+              Totals
+            </Card.Header>
             <Card.Body>
               <Row>
                 <Col>
@@ -276,29 +325,6 @@ const textsPerTimeData = {
           </Card>
         </Col>
       </Row>
-      {/* Word Cloud Section commented out
-      <Row className="mb-4">
-        <Col md={12}>
-          <Card className="lovey-card">
-            <Card.Header>Word Cloud</Card.Header>
-            <Card.Body>
-              <div style={{ height: "400px" }}>
-                <Chart
-                  type={WordCloudController.id}
-                  data={wordCloudData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    // Additional word cloud-specific options can be added here, if needed.
-                  }}
-                />
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-    </Row>
-    */}
       {/* Emoji Frequency & Word Frequency Bar Charts */}
       <Row>
         <Col md={6} className="mb-4">
@@ -331,7 +357,6 @@ const textsPerTimeData = {
             </Card.Body>
           </Card>
         </Col>
-
         <Col md={6} className="mb-4">
           <Card className="lovey-card">
             <Card.Header>Word Frequency</Card.Header>
@@ -365,7 +390,9 @@ const textsPerTimeData = {
       </Row>
       {/* Message Frequency per Day Line Chart */}
       <Card className="lovey-card mb-4">
-        <Card.Header>Message Frequency per Day (Nadia & Stephen)</Card.Header>
+        <Card.Header>
+          Message Frequency per Day (Nadia & Stephen)
+        </Card.Header>
         <Col md={12} className="mb-4">
           <Card.Body>
             <Line
@@ -378,14 +405,10 @@ const textsPerTimeData = {
                     display: true,
                     text: "Messages per Day (try zooming!)",
                   },
-                  // Enable zooming and panning on the x-axis:
                   zoom: {
-                    pan: {
-                      enabled: true,
-                      mode: "x",
-                    },
+                    pan: { enabled: true, mode: "x" },
                     zoom: {
-                      wheel: { enabled: true }, // Allow zooming with the mouse wheel
+                      wheel: { enabled: true },
                       pinch: { enabled: true },
                       mode: "x",
                     },
@@ -396,18 +419,13 @@ const textsPerTimeData = {
           </Card.Body>
         </Col>
       </Card>
-        {/* NEW: Average Response Time per Day Line Chart */}
-        
+      {/* Average Response Time per Day Line Chart */}
       <Card className="lovey-card mb-4">
-            
         <Card.Header>
           Average Response Time per Day (Nadia & Stephen)
         </Card.Header>
-            
         <Col md={12} className="mb-4">
-                
           <Card.Body>
-                    
             <Line
               data={avgResponseTimeData}
               options={{
@@ -429,11 +447,8 @@ const textsPerTimeData = {
                 },
               }}
             />
-                  
           </Card.Body>
-              
         </Col>
-          
       </Card>
       {/* Texts per Time of Day Bar Chart */}
       <Card className="lovey-card mb-4">
@@ -450,6 +465,20 @@ const textsPerTimeData = {
           </Card.Body>
         </Col>
       </Card>
+      {/* ★ NEW: Overlaid Bursting Words Line Chart */}
+      {burstingWordDatasets.length > 0 && (
+        <Card className="lovey-card mb-4">
+          <Card.Header>Bursting Words Over Time</Card.Header>
+          <Col md={12} className="mb-4">
+            <Card.Body>
+              <Line
+                data={burstingWordChartData}
+                options={burstingWordChartOptions}
+              />
+            </Card.Body>
+          </Col>
+        </Card>
+      )}
     </Container>
   );
 };

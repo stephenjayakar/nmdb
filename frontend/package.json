@@ -13,6 +13,7 @@
     "boostrap": "^2.0.0",
     "bootstrap": "^5.3.3",
     "chart.js": "^4.4.8",
+    "chartjs-adapter-moment": "^1.0.1",
     "chartjs-chart-wordcloud": "^4.4.4",
     "chartjs-plugin-zoom": "^2.2.0",
     "convex": "^1.19.3",
