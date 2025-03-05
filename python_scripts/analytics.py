@@ -2,7 +2,7 @@ from message import load_messages_from_merged
 import sys
 import collections
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import emoji
 import json
 from pathlib import Path
@@ -111,6 +111,55 @@ def message_count_by_hour(messages):
     return hour_freq
 
 
+def average_response_time_per_day(messages):
+    # Group messages by day
+    msg_by_day = collections.defaultdict(list)
+    for msg in messages:
+        msg_by_day[msg.timestamp.date()].append(msg)
+
+    if not messages:
+        return {}
+
+    # Prepare result dictionary
+    result = {}
+    # Determine the full range of days from first to last message
+    min_day = min(msg_by_day.keys())
+    max_day = max(msg_by_day.keys())
+    current_day = min_day
+
+    while current_day <= max_day:
+        if current_day in msg_by_day:
+            # Sort messages for the day by timestamp
+            day_msgs = sorted(msg_by_day[current_day], key=lambda m: m.timestamp)
+            # Initialize separate accumulators for stephen and nadia
+            stephen_total = 0
+            stephen_count = 0
+            nadia_total = 0
+            nadia_count = 0
+            prev_msg = None
+            # Loop through messages for the day
+            for m in day_msgs:
+                if prev_msg is not None and m.sender.lower() != prev_msg.sender.lower():
+                    diff = (m.timestamp - prev_msg.timestamp).total_seconds()
+                    # If Stephen is replying to Nadia, attribute to Stephen
+                    if m.sender.lower() == "stephen" and prev_msg.sender.lower() == "nadia":
+                        stephen_total += diff
+                        stephen_count += 1
+                    # If Nadia is replying to Stephen, attribute to Nadia
+                    elif m.sender.lower() == "nadia" and prev_msg.sender.lower() == "stephen":
+                        nadia_total += diff
+                        nadia_count += 1
+                prev_msg = m
+
+            stephen_avg = stephen_total / stephen_count if stephen_count > 0 else 0
+            nadia_avg = nadia_total / nadia_count if nadia_count > 0 else 0
+            result[current_day] = {"stephen": stephen_avg, "nadia": nadia_avg}
+        else:
+            result[current_day] = {"stephen": 0, "nadia": 0}
+        current_day += timedelta(days=1)
+    return result
+
+
 argument = sys.argv[1]
 messages = load_messages_from_merged()
 
@@ -125,8 +174,6 @@ elif argument == "words":
     calculate_word_frequencies(messages, top_n=20)
 elif argument == "person-day":
     message_frequency_per_day_per_person(messages)
-elif argument == "hour":
-    message_count_by_hour(messages)
 elif argument == "all":
     # Call all analytics functions (prints output as before)
     tw = total_word_count(messages)
@@ -137,6 +184,7 @@ elif argument == "all":
     wf = calculate_word_frequencies(messages)
     mfpdp = message_frequency_per_day_per_person(messages)
     mcbh = message_count_by_hour(messages)
+    art = average_response_time_per_day(messages)  # our new calculation
 
     # Prepare JSON output. Note we convert some keys to strings for JSON compatibility.
     json_results = {
@@ -156,13 +204,16 @@ elif argument == "all":
         "message_count_by_hour": {
             str(hour).zfill(2): count for hour, count in mcbh.items()
         },
+        "average_response_time_per_day": {
+            str(day): art[day] for day in sorted(art)
+        },
     }
 
     # Write JSON output to ../output/analytics.json
     output_path = Path("../output/analytics.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as f:
-        json.dump(json_results, f, ensure_ascii=False, indent=2)
+        json.dump([json_results], f, ensure_ascii=False, indent=2)
 
     print(f"Analytics JSON written to {output_path}")
 

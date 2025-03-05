@@ -180,11 +180,11 @@ const AnalyticsPage = ({ token }) => {
   };
 
   // TODO: temp
-  analyticsData.average_response_time_per_day = {
-    "2023-09-01": { "nadia": 25, "stephen": 40 },
-    "2023-09-02": { "nadia": 30, "stephen": 35 },
-    "2023-09-03": { "nadia": 20, "stephen": 45 }
-  };
+  // analyticsData.average_response_time_per_day = {
+  //   "2023-09-01": { "nadia": 25, "stephen": 40 },
+  //   "2023-09-02": { "nadia": 30, "stephen": 35 },
+  //   "2023-09-03": { "nadia": 20, "stephen": 45 }
+  // };
   // NEW: Average Response Time per Day Data
   const responseDays = Object.keys(analyticsData.average_response_time_per_day).sort(
     (a, b) => new Date(a) - new Date(b)
