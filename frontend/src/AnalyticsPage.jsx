@@ -35,7 +35,7 @@ ChartJS.register(
 );
 
 // Example: Increase default font size
-ChartJS.defaults.font.size = 16;
+ChartJS.defaults.font.size = 18;
 
 const AnalyticsPage = ({ token }) => {
   const analyticsData = useQuery(api.messages.getAnalytics, { token });
@@ -310,6 +310,7 @@ const AnalyticsPage = ({ token }) => {
         <Card.Header>
           Message Frequency per Day (Nadia & Stephen)
         </Card.Header>
+        <Col md={12} className="mb-4">
         <Card.Body>
           <Line
             data={messageFrequencyData}
@@ -322,11 +323,13 @@ const AnalyticsPage = ({ token }) => {
             }}
           />
         </Card.Body>
+        </Col>
       </Card>
 
       {/* Texts per Time of Day Bar Chart */}
       <Card className="lovey-card mb-4">
         <Card.Header>Texts per Time of Day (PST)</Card.Header>
+        <Col md={12} className="mb-4">
         <Card.Body>
           <Bar
             data={textsPerTimeData}
@@ -336,6 +339,7 @@ const AnalyticsPage = ({ token }) => {
             }}
           />
         </Card.Body>
+        </Col>
       </Card>
     </Container>
   );
