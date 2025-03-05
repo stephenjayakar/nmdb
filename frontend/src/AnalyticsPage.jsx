@@ -32,6 +32,7 @@ ChartJS.register(
   WordCloudController,
   WordElement
 );
+ChartJS.defaults.font.size = 16; // This line increases text size across all charts
 
 const AnalyticsPage = ({ token }) => {
   const analyticsData = useQuery(api.messages.getAnalytics, { token });
