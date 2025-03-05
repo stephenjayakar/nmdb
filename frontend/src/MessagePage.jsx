@@ -3,6 +3,7 @@ import Timeline from './Timeline'
 import { useQuery, useConvex } from "convex/react";
 import { api } from "./convex/_generated/api";
 import { Button, Spinner, Card } from "react-bootstrap";
+import SearchBarDatePicker from "./SearchBarDatePicker";
 
 const formatTimestamp = (timestamp) => {
   try {
@@ -27,10 +28,7 @@ const MessagePage = ({ token }) => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef(null);
 
-  const timelineBounds = useQuery(api.messages.timelineBounds, {
-    token,
-  });
-
+  const timelineBounds = useQuery(api.messages.timelineBounds, { token });
   const initialMessages = useQuery(api.messages.getInitialMessages, { token });
 
   useEffect(() => {
@@ -61,26 +59,21 @@ const MessagePage = ({ token }) => {
 
   const loadOlder = async () => {
     const minTS = messages[0].timestamp;
-    const olderMessages = await convex.query(
-      api.messages.getMessagesAroundDate,
-      {
-        token,
-        direction: "before",
-        timestamp: minTS,
-      }
-    );
+    const olderMessages = await convex.query(api.messages.getMessagesAroundDate, {
+      token,
+      direction: "before",
+      timestamp: minTS,
+    });
     setMessages([...olderMessages, ...messages]);
   };
+
   const loadNewer = async () => {
     const maxTS = messages[messages.length - 1].timestamp;
-    const newerMessages = await convex.query(
-      api.messages.getMessagesAroundDate,
-      {
-        token,
-        direction: "after",
-        timestamp: maxTS,
-      }
-    );
+    const newerMessages = await convex.query(api.messages.getMessagesAroundDate, {
+      token,
+      direction: "after",
+      timestamp: maxTS,
+    });
     setMessages([...messages, ...newerMessages]);
   };
 
@@ -92,10 +85,27 @@ const MessagePage = ({ token }) => {
     setMessages(newMessages);
   };
 
+  const handleSearch = async (query) => {
+    const newMessages = await convex.query(api.messages.fasterSearch, {
+      token,
+      searchTerm: query,
+    });
+    setMessages(newMessages);
+  };
+
+  const handleDateChange = (date) => {
+    reloadWithTimestamp(date);
+  };
+
   return (
     <div className="container">
       <div className="row justify-content-center">
         <div className="col-md-8">
+          {/* Add the Search Bar & Date Picker above your messages */}
+          <SearchBarDatePicker
+            onSearch={handleSearch}
+            onDateChange={handleDateChange}
+          />
           {!messages ? (
             <div className="text-center my-5">
               <Spinner animation="border" role="status">
@@ -126,7 +136,9 @@ const MessagePage = ({ token }) => {
         <Timeline
           minDate={timelineBounds[0]}
           maxDate={timelineBounds[1]}
-          onDateSelect={(date) => reloadWithTimestamp(date.toISOString())}
+          onDateSelect={(date) =>
+            reloadWithTimestamp(date.toISOString())
+          }
         />
       )}
     </div>
@@ -138,7 +150,11 @@ const MessageList = ({ messages, onTimestampClick }) => {
 
   const makeLinksClickable = (text) => {
     const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[A-Z0-9+&@#\/%=~_|])/gi;
-    return text.replace(urlPattern, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+    return text.replace(
+      urlPattern,
+      (url) =>
+        `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    );
   };
 
   return (
@@ -152,9 +168,15 @@ const MessageList = ({ messages, onTimestampClick }) => {
             bg={isUser ? "light" : "white"}
           >
             <Card.Body>
-              <Card.Title className="text-primary">{msg.sender}</Card.Title>
+              <Card.Title className="text-primary">
+                {msg.sender}
+              </Card.Title>
               <Card.Text>
-                <span dangerouslySetInnerHTML={{ __html: makeLinksClickable(msg.message) }} />
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: makeLinksClickable(msg.message),
+                  }}
+                />
               </Card.Text>
               <Card.Footer className="text-end p-0 bg-transparent border-0">
                 <small className="text-muted">

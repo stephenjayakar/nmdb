@@ -1,8 +1,6 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 
-const N = 1024;
-
 const authCheck = async (ctx: any, token: string) => {
     const tokenExists =
       (await ctx.db
@@ -50,16 +48,16 @@ export const fasterSearch = query({
 
     let messages = [];
     if (args.searchTerm == "") {
-      messages = await ctx.db.query("messages").take(N);
+      messages = await ctx.db.query("messages").take(40);
     } else {
       messages = await ctx.db
         .query("messages")
         .withSearchIndex("search_message", (q) =>
           q.search("message", args.searchTerm)
         )
-        .take(N);
+        .take(40);
     }
-    return sortMessages(messages);
+    return messages;
   },
 });
 
