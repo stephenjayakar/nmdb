@@ -1,6 +1,6 @@
 import React from "react";
-import { Container, Row, Col, Card } from "react-bootstrap";
-import { Pie, Bar, Line } from "react-chartjs-2";
+import { Container, Row, Col, Card, Spinner } from "react-bootstrap";
+import { Pie, Bar, Line, Chart } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,8 +14,10 @@ import {
   ArcElement,
 } from "chart.js";
 import { WordCloudController, WordElement } from "chartjs-chart-wordcloud"; // Word Cloud Plugin
-import { Chart } from "react-chartjs-2";
 import "./AnalyticsPage.css"; // Custom lovey styles
+
+import { useQuery } from "convex/react";
+import { api } from "./convex/_generated/api";
 
 ChartJS.register(
   CategoryScale,
@@ -31,74 +33,100 @@ ChartJS.register(
   WordElement
 );
 
-const AnalyticsPage = () => {
-  // Totals section sample data
+const AnalyticsPage = ({ token }) => {
+  const analyticsData = useQuery(api.messages.getAnalytics, { token });
+  console.log(analyticsData)
+
+  if (!analyticsData) {
+    return (
+      <Container className="text-center my-4">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </Container>
+    );
+  }
+
+  // Totals Section: Using the keys from the analytic JSON
   const totals = {
-    totalMessages: 1200,
-    totalDays: 30,
-    totalWords: 8000,
-    messagesPerDay: 40,
+    totalMessages: analyticsData.num_messages.total,
+    totalDays: analyticsData.num_days,
+    totalWords: analyticsData.num_words_total,
+    messagesPerDay: analyticsData.messages_per_day,
   };
 
-  // Pie Chart Data: Who sent more messages?
+  // Pie Chart Data: Who sent more messages? Using messages from Nadia & Stephen.
   const pieData = {
     labels: ["Nadia", "Stephen"],
     datasets: [
       {
-        data: [500, 700],
-        backgroundColor: ["rgba(255, 99, 132, 0.6)", "rgba(54, 162, 235, 0.6)"],
+        data: [
+          analyticsData.num_messages.nadia,
+          analyticsData.num_messages.stephen,
+        ],
+        backgroundColor: [
+          "rgba(255, 99, 132, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+        ],
         borderWidth: 1,
       },
     ],
   };
 
-  // Emoji Frequency Bar Chart
+  // Emoji Frequency Bar Chart – transform the emoji_frequency list into labels and counts.
+  const emojiLabels = analyticsData.emoji_frequency.map((item) => item[0]);
+  const emojiCounts = analyticsData.emoji_frequency.map((item) => item[1]);
   const emojiData = {
-    labels: ["😀", "😂", "😢", "😍"],
+    labels: emojiLabels,
     datasets: [
       {
         label: "Emoji Frequency",
-        data: [45, 75, 30, 50],
+        data: emojiCounts,
         backgroundColor: "rgba(75, 192, 192, 0.6)",
       },
     ],
   };
 
-  // Word Frequency Bar Chart
+  // Word Frequency Bar Chart – similar transformation.
+  const wordLabels = analyticsData.word_frequency.map((item) => item[0]);
+  const wordCounts = analyticsData.word_frequency.map((item) => item[1]);
   const wordData = {
-    labels: ["hello", "bye", "thanks", "love"],
+    labels: wordLabels,
     datasets: [
       {
         label: "Word Frequency",
-        data: [120, 80, 60, 100],
+        data: wordCounts,
         backgroundColor: "rgba(153, 102, 255, 0.6)",
       },
     ],
   };
 
-  // Message Frequency Line Chart (per day for Nadia & Stephen)
-  const messageFrequencyLabels = [
-    "Day 1",
-    "Day 2",
-    "Day 3",
-    "Day 4",
-    "Day 5",
-    "Day 6",
-    "Day 7",
-  ];
+  // Message Frequency per Day per Person:
+  // analyticsData.message_frequency_per_day_per_person is expected to be an object like:
+  // { "2023-09-01": { "nadia": count, "stephen": count }, ... }
+  const days = Object.keys(analyticsData.message_frequency_per_day_per_person).sort(
+    (a, b) => new Date(a) - new Date(b)
+  );
+  const datasetNadia = days.map(
+    (day) => analyticsData.message_frequency_per_day_per_person[day].nadia || 0
+  );
+  const datasetStephen = days.map(
+    (day) => analyticsData.message_frequency_per_day_per_person[day].stephen || 0
+  );
+
   const messageFrequencyData = {
-    labels: messageFrequencyLabels,
+    labels: days,
     datasets: [
       {
         label: "Nadia",
-        data: [20, 25, 30, 22, 18, 27, 30],
+        data: datasetNadia,
         borderColor: "rgba(255, 99, 132, 1)",
         backgroundColor: "rgba(255, 99, 132, 0.2)",
         fill: false,
       },
       {
         label: "Stephen",
-        data: [30, 35, 40, 32, 28, 37, 40],
+        data: datasetStephen,
         borderColor: "rgba(54, 162, 235, 1)",
         backgroundColor: "rgba(54, 162, 235, 0.2)",
         fill: false,
@@ -106,92 +134,108 @@ const AnalyticsPage = () => {
     ],
   };
 
-  // Texts per Time of Day (PST) Bar Chart
-  const timeOfDayLabels = ["12AM", "3AM", "6AM", "9AM", "12PM", "3PM", "6PM", "9PM"];
+  // Texts per Time of Day (PST) Bar Chart:
+  // analyticsData.message_count_by_hour is an object with keys like "00", "01", etc.
+  const timeLabels = Object.keys(analyticsData.message_count_by_hour);
+  const sortedTimeLabels = timeLabels.sort((a, b) => parseInt(a) - parseInt(b));
+  const timeCounts = sortedTimeLabels.map(
+    (time) => analyticsData.message_count_by_hour[time]
+  );
   const textsPerTimeData = {
-    labels: timeOfDayLabels,
+    labels: sortedTimeLabels,
     datasets: [
       {
         label: "Texts per Time (PST)",
-        data: [5, 15, 30, 50, 40, 35, 20, 10],
+        data: timeCounts,
         backgroundColor: "rgba(255, 206, 86, 0.6)",
       },
     ],
   };
-  const wordCloudData = {
-    labels: ["love", "miss", "you", "adorable", "sweetheart", "hugs", "forever", "cute", "darling", "xoxo"],
-    datasets: [
-      {
-        label: "Word Frequency",
-        data: [120, 95, 80, 75, 60, 50, 45, 40, 30, 25], // Frequency of each word
-        backgroundColor: "rgba(255, 99, 132, 0.6)",
-      },
-    ],
-  };
 
-  const wordCloudOptions = {
-    plugins: {
-      legend: {
-        display: false,
-      },
-    },
-    elements: {
-      word: {
-        fontSize: (ctx) => ctx.raw * 0.5 + 10, // Scale font size based on frequency
-        rotation: () => Math.random() * 60 - 30, // Slight random rotation for effect
-      },
-    },
-  };
+  // const validWords = analyticsData.word_frequency.filter(
+  //   ([word, count]) => word && count > 0
+  // );
+  // const wordCloudLabels = validWords.map(([word]) => word);
+  // const wordCloudCounts = validWords.map(([, count]) => count);
+
+  // const wordCloudData = {
+  //   labels: wordCloudLabels,
+  //   datasets: [
+  //     {
+  //       label: "Word Frequency",
+  //       data: wordCloudCounts,
+  //       backgroundColor: "rgba(255, 99, 132, 0.6)",
+  //     },
+  //   ],
+  // };
+
+  // const wordCloudOptions = {
+  //   responsive: true,
+  //   plugins: {
+  //     legend: { display: false },
+  //   },
+  //   elements: {
+  //     word: {
+  //       fontSize: (ctx) => {
+  //         // Ensure a minimum font size so that words are always visible
+  //         const size = ctx.raw;
+  //         return Math.max(size * 0.5 + 10, 14);
+  //       },
+  //       rotation: () => Math.random() * 60 - 30,
+  //       padding: 2,
+  //     },
+  //   },
+  // };
 
   return (
     <Container className="lovey-dashboard my-4">
-      <h2 className="lovey-header mb-4">
-        💖 Our Message Memories 💖
-      </h2>
-      {/* Word Cloud Section */}
+      <h2 className="lovey-header mb-4">💖 Our Message Memories 💖</h2>
+
+      {/* Word Cloud Section
       <Card className="lovey-card mb-4">
-  <Card.Header>💬 Our Most Used Words 💬</Card.Header>
-  <Card.Body>
-    <div style={{ width: "100%", height: "350px" }}> {/* Ensures enough space */}
-      <Chart type="wordCloud" data={wordCloudData} options={wordCloudOptions} />
-    </div>
-  </Card.Body>
-</Card>
+        <Card.Header>💬 Our Most Used Words 💬</Card.Header>
+        <Card.Body>
+          <div style={{ width: "100%", height: "350px" }}>
+            <Chart type="wordCloud" data={wordCloudData} options={wordCloudOptions} />
+          </div>
+        </Card.Body>
+      </Card>*/}
+
       <Row>
         <Col md={6} className="mb-4">
-      {/* Totals Section */}
-      <Card className="lovey-card mb-4">
-        <Card.Header>Totals</Card.Header>
-        <Card.Body>
-          <Row>
-            <Col>
-              <strong>Total Messages:</strong> {totals.totalMessages}
-            </Col>
-            <Col>
-              <strong># of Days:</strong> {totals.totalDays}
-            </Col>
-          </Row>
-          <Row className="mt-3">
-            <Col>
-              <strong># of Words:</strong> {totals.totalWords}
-            </Col>
-            <Col>
-              <strong>Messages per Day:</strong> {totals.messagesPerDay}
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-          </Col>
-        <Col md={6} className="mb-4">
-      {/* Pie Chart Section */}
-      <Card className="lovey-card mb-4">
-        <Card.Header>Who Sent More Messages?</Card.Header>
-        <Card.Body>
-          <Pie data={pieData} />
-        </Card.Body>
-      </Card>
+          {/* Totals Section */}
+          <Card className="lovey-card mb-4">
+            <Card.Header>Totals</Card.Header>
+            <Card.Body>
+              <Row>
+                <Col>
+                  <strong>Total Messages:</strong> {totals.totalMessages}
+                </Col>
+                <Col>
+                  <strong># of Days:</strong> {totals.totalDays}
+                </Col>
+              </Row>
+              <Row className="mt-3">
+                <Col>
+                  <strong># of Words:</strong> {totals.totalWords}
+                </Col>
+                <Col>
+                  <strong>Messages per Day:</strong> {totals.messagesPerDay}
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
         </Col>
-        </Row>
+        <Col md={6} className="mb-4">
+          {/* Pie Chart Section */}
+          <Card className="lovey-card mb-4">
+            <Card.Header>Who Sent More Messages?</Card.Header>
+            <Card.Body>
+              <Pie data={pieData} />
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
       <Row>
         {/* Emoji Frequency Bar Chart */}

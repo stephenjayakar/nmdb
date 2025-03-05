@@ -119,5 +119,16 @@ export const reloadMessages = query({
     return messages;
   }});
 
+export const getAnalytics = query({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!authCheck(ctx, args.token)) {
+      return [];
+    }
+    return await ctx.db.query("analytics").first();
+  }});
+
 const sortMessages = (messages: any[]) =>
   messages.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
