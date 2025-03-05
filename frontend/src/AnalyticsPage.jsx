@@ -13,6 +13,8 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
+import { WordCloudController, WordElement } from "chartjs-chart-wordcloud"; // Word Cloud Plugin
+import { Chart } from "react-chartjs-2";
 import "./AnalyticsPage.css"; // Custom lovey styles
 
 ChartJS.register(
@@ -24,7 +26,9 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  WordCloudController,
+  WordElement
 );
 
 const AnalyticsPage = () => {
@@ -114,13 +118,45 @@ const AnalyticsPage = () => {
       },
     ],
   };
+  const wordCloudData = {
+    labels: ["love", "miss", "you", "adorable", "sweetheart", "hugs", "forever", "cute", "darling", "xoxo"],
+    datasets: [
+      {
+        label: "Word Frequency",
+        data: [120, 95, 80, 75, 60, 50, 45, 40, 30, 25], // Frequency of each word
+        backgroundColor: "rgba(255, 99, 132, 0.6)",
+      },
+    ],
+  };
+
+  const wordCloudOptions = {
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    elements: {
+      word: {
+        fontSize: (ctx) => ctx.raw * 0.5 + 10, // Scale font size based on frequency
+        rotation: () => Math.random() * 60 - 30, // Slight random rotation for effect
+      },
+    },
+  };
 
   return (
     <Container className="lovey-dashboard my-4">
       <h2 className="lovey-header mb-4">
         💖 Our Message Memories 💖
       </h2>
-
+      {/* Word Cloud Section */}
+      <Card className="lovey-card mb-4">
+  <Card.Header>💬 Our Most Used Words 💬</Card.Header>
+  <Card.Body>
+    <div style={{ width: "100%", height: "350px" }}> {/* Ensures enough space */}
+      <Chart type="wordCloud" data={wordCloudData} options={wordCloudOptions} />
+    </div>
+  </Card.Body>
+</Card>
       <Row>
         <Col md={6} className="mb-4">
       {/* Totals Section */}
