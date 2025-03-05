@@ -1,5 +1,6 @@
 import sys
 import collections
+from collections import defaultdict
 import re
 from datetime import datetime, timedelta
 import emoji
@@ -189,24 +190,34 @@ def overall_average_response_time(messages):
 def detect_new_word_bursts(messages, save_to_png=False):
     """
     Detect words whose usage bursts after their first appearance.
-
-    Only words that:
-      - are used more than 50 times in total across all messages, AND
-      - do not appear in the first two months of overall conversation
-    are considered.
-
-    For each qualifying word, usage counts are bucketed by month.
-    A burst is detected when, for any month after the first month of appearance,
-    the word usage hits at least 5× the count in its first month.
     
-    If save_to_png is True, the timeline for each bursting word is saved as a PNG
+    Only words with total usage > 25 and that appear only after the first two months are considered.
+    Then, words are merged by “normalizing” them—collapsing consecutive duplicate letters.
+    For example, if words like 'mrr' and 'mrrrr' occur, they will be grouped and reported as 'mrr*'.
+    
+    For each (grouped) word, usage counts are bucketed by month.
+    A burst is detected when, for any month after the first month of appearance,
+    the bucket reaches at least 5× the count in its first month.
+    
+    If save_to_png is True, the timeline for each bursting word group is saved as a PNG
     in the "../output" directory; otherwise, the plot is shown interactively.
+    
+    Returns:
+       A dictionary of bursting series. Keys are the (possibly normalized) labels
+       (e.g., "mrr" or "mrr*"), and values are dicts mapping month (datetime) to count.
     """
+
+    # helper: collapse repeated letters.
+    def normalize_word(word):
+        # For example, 'mrrr' becomes 'mr' – note this simple method will collapse all runs.
+        return re.sub(r'(.)\1+', r'\1', word)
+
     ascii_pattern = re.compile(r"\b[a-zA-Z]+\b")
     global_start = min(msg.timestamp for msg in messages)
     boundary_date = global_start + timedelta(days=60)
 
-    word_month_counts = collections.defaultdict(lambda: collections.defaultdict(int))
+    # First pass: build counts per word per month (for each original word)
+    word_month_counts = defaultdict(lambda: defaultdict(int))
     for msg in messages:
         if any(skip in msg.message for skip in skip_word_list):
             continue
@@ -215,14 +226,16 @@ def detect_new_word_bursts(messages, save_to_png=False):
         for word in words:
             word_month_counts[word][month_key] += 1
 
+    # Detect bursting words in the original dictionary.
     bursting_words = {}
     for word, month_counts in word_month_counts.items():
         total_usage = sum(month_counts.values())
-        if total_usage <= 50:
+        if total_usage <= 25:
             continue
         months_sorted = sorted(month_counts.keys())
         if not months_sorted:
             continue
+        # Consider only words that did NOT appear until after the first two months.
         first_month = months_sorted[0]
         if first_month < boundary_date:
             continue
@@ -235,37 +248,65 @@ def detect_new_word_bursts(messages, save_to_png=False):
         if burst_found:
             bursting_words[word] = month_counts
 
+    # Now, group similar bursting words using normalization.
+    # For each original bursting word, compute its normalized form.
+    # Then merge counts for words with the same normalized outcome.
+    grouped_bursts = {}  # key: normalized word, value: tuple(set(original_words), merged_counts dict)
     for word, month_counts in bursting_words.items():
+        norm = normalize_word(word)
+        if norm not in grouped_bursts:
+            # Create a copy of month_counts so later merging will work fine.
+            grouped_bursts[norm] = (set([word]), dict(month_counts))
+        else:
+            orig_set, merged = grouped_bursts[norm]
+            orig_set.add(word)
+            for m, count in month_counts.items():
+                merged[m] = merged.get(m, 0) + count
+
+    # Create the final dictionary to return and plot.
+    # For each group, if more than one word was merged or the original word doesn't equal the normalized version,
+    # add an asterisk to indicate merging.
+    final_bursts = {}
+    for norm, (orig_set, merged_counts) in grouped_bursts.items():
+        if len(orig_set) > 1 or any(word != norm for word in orig_set):
+            label = norm + "*"
+        else:
+            label = norm
+        final_bursts[label] = merged_counts
+
+    # Plot timeline for each grouped bursting word.
+    for label, month_counts in final_bursts.items():
         months_sorted = sorted(month_counts.keys())
         counts = [month_counts[m] for m in months_sorted]
 
         plt.figure()
         plt.plot(months_sorted, counts, marker='o', linestyle='-')
-        plt.title(f"Usage Timeline for '{word}'")
+        plt.title(f"Usage Timeline for '{label}'")
         plt.xlabel("Month")
         plt.ylabel("Count")
         plt.xticks(rotation=45)
         plt.tight_layout()
 
-        if save_to_png:
-            output_path = Path("../output")
-            output_path.mkdir(parents=True, exist_ok=True)
-            graph_file = output_path / f"{word}_burst.png"
-            plt.savefig(graph_file)
-            plt.close()
-            print(f"Graph for word '{word}' saved to {graph_file}")
-        else:
-            plt.show()
-            plt.close()
+        # if save_to_png:
+        #     output_path = Path("../output")
+        #     output_path.mkdir(parents=True, exist_ok=True)
+        #     graph_file = output_path / f"{label}_burst.png"
+        #     plt.savefig(graph_file)
+        #     plt.close()
+        #     print(f"Graph for bursting group '{label}' saved to {graph_file}")
+        # else:
+        #     plt.show()
+        #     plt.close()
 
-    if bursting_words:
-        print("Bursting words detected:")
-        for word in bursting_words:
-            print(f"  {word}")
+    if final_bursts:
+        print("Bursting words (grouped) detected:")
+        for label in final_bursts:
+            print(f"  {label}")
     else:
         print("No bursting words were detected.")
 
-    return bursting_words
+    return final_bursts
+
 
 
 argument = sys.argv[1]
@@ -301,7 +342,7 @@ elif argument == "all":
     overall_rt = overall_average_response_time(messages)
     
     # Detect bursting words (plots are saved as PNG) and capture the series.
-    bursting_words = detect_new_word_bursts(messages, save_to_png=True)
+    bursting_words = detect_new_word_bursts(messages, save_to_png=False)
     # Convert bursting words month_counts to JSON serializable form.
     bursting_word_series = {}
     for word, month_counts in bursting_words.items():
