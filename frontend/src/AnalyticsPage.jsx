@@ -124,13 +124,6 @@ const AnalyticsPage = ({ token }) => {
       {
         label: 'Score',
         data: data,
-        backgroundColor: function(ctx) {
-    // You can use a deterministic method here if desired.
-    const r = Math.floor(Math.random() * 150) + 100;
-    const g = Math.floor(Math.random() * 150) + 100;
-    const b = Math.floor(Math.random() * 150) + 100;
-    return `rgba(${r}, ${g}, ${b}, 0.8)`;
-  },
       },
     ],
   };
@@ -186,6 +179,42 @@ const AnalyticsPage = ({ token }) => {
     ],
   };
 
+  // TODO: temp
+  analyticsData.average_response_time_per_day = {
+    "2023-09-01": { "nadia": 25, "stephen": 40 },
+    "2023-09-02": { "nadia": 30, "stephen": 35 },
+    "2023-09-03": { "nadia": 20, "stephen": 45 }
+  };
+  // NEW: Average Response Time per Day Data
+  const responseDays = Object.keys(analyticsData.average_response_time_per_day).sort(
+    (a, b) => new Date(a) - new Date(b)
+  );
+  const avgResponseNadia = responseDays.map(
+    (day) => analyticsData.average_response_time_per_day[day].nadia || 0
+  );
+  const avgResponseStephen = responseDays.map(
+    (day) => analyticsData.average_response_time_per_day[day].stephen || 0
+  );
+  const avgResponseTimeData = {
+    labels: responseDays,
+    datasets: [
+      {
+       label: "Nadia",
+       data: avgResponseNadia,
+       borderColor: "rgba(255, 99, 132, 1)",
+       backgroundColor: "rgba(255, 99, 132, 0.2)",
+       fill: false,
+      },
+      {
+       label: "Stephen",
+       data: avgResponseStephen,
+       borderColor: "rgba(54, 162, 235, 1)",
+       backgroundColor: "rgba(54, 162, 235, 0.2)",
+       fill: false,
+      },
+    ],
+  };
+
   return (
     <Container className="lovey-dashboard my-4">
       <h2 className="lovey-header mb-4">💖 Our Message Memories 💖</h2>
@@ -225,13 +254,12 @@ const AnalyticsPage = ({ token }) => {
         </Col>
       </Row>
 
-      {/* Word Cloud Section */}
+      {/* Word Cloud Section commented out
       <Row className="mb-4">
         <Col md={12}>
           <Card className="lovey-card">
             <Card.Header>Word Cloud</Card.Header>
             <Card.Body>
-              {/* Fixed-height container for the Word Cloud */}
               <div style={{ height: "400px" }}>
                 <Chart
                   type={WordCloudController.id}
@@ -247,7 +275,8 @@ const AnalyticsPage = ({ token }) => {
             </Card.Body>
           </Card>
         </Col>
-      </Row>
+    </Row>
+    */}
 
       {/* Emoji Frequency & Word Frequency Bar Charts */}
       <Row>
@@ -346,6 +375,36 @@ const AnalyticsPage = ({ token }) => {
         </Card.Body>
       </Col>
     </Card>
+
+      {/* NEW: Average Response Time per Day Line Chart */}
+  <Card className="lovey-card mb-4">
+    <Card.Header>Average Response Time per Day (Nadia & Stephen)</Card.Header>
+    <Col md={12} className="mb-4">
+      <Card.Body>
+        <Line
+          data={avgResponseTimeData}
+          options={{
+            responsive: true,
+            plugins: {
+             legend: { position: "top" },
+             title: {
+              display: true,
+              text: "Average Response Time per Day (in seconds)",
+            },
+             zoom: {
+              pan: { enabled: true, mode: "x" },
+              zoom: {
+               wheel: { enabled: true },
+               pinch: { enabled: true },
+               mode: "x",
+             },
+            },
+                      }}}
+        />
+      </Card.Body>
+    </Col>
+  </Card>
+
 
       {/* Texts per Time of Day Bar Chart */}
       <Card className="lovey-card mb-4">
