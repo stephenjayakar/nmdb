@@ -32,11 +32,11 @@ ChartJS.register(
   WordCloudController,
   WordElement
 );
-ChartJS.defaults.font.size = 16; // This line increases text size across all charts
+ChartJS.defaults.font.size = 16; // Increases text size across all charts
 
 const AnalyticsPage = ({ token }) => {
   const analyticsData = useQuery(api.messages.getAnalytics, { token });
-  console.log(analyticsData)
+  console.log(analyticsData);
 
   if (!analyticsData) {
     return (
@@ -48,7 +48,7 @@ const AnalyticsPage = ({ token }) => {
     );
   }
 
-  // Totals Section: Using the keys from the analytic JSON
+  // Totals Section
   const totals = {
     totalMessages: analyticsData.num_messages.total,
     totalDays: analyticsData.num_days,
@@ -56,7 +56,7 @@ const AnalyticsPage = ({ token }) => {
     messagesPerDay: analyticsData.messages_per_day,
   };
 
-  // Pie Chart Data: Who sent more messages? Using messages from Nadia & Stephen.
+  // Pie Chart Data
   const pieData = {
     labels: ["Nadia", "Stephen"],
     datasets: [
@@ -88,7 +88,11 @@ const AnalyticsPage = ({ token }) => {
     ],
   };
 
-  // Word Frequency Bar Chart – similar transformation.
+  // For a scrollable horizontal bar chart: calculate a proper height.
+  // For example: at least 600px or 25px per emoji label if there are many.
+  const emojiChartHeight = Math.max(600, emojiLabels.length * 25);
+
+  // Word Frequency Bar Chart – similar transformation (we'll update this later).
   const wordLabels = analyticsData.word_frequency.map((item) => item[0]);
   const wordCounts = analyticsData.word_frequency.map((item) => item[1]);
   const wordData = {
@@ -103,8 +107,6 @@ const AnalyticsPage = ({ token }) => {
   };
 
   // Message Frequency per Day per Person:
-  // analyticsData.message_frequency_per_day_per_person is expected to be an object like:
-  // { "2023-09-01": { "nadia": count, "stephen": count }, ... }
   const days = Object.keys(analyticsData.message_frequency_per_day_per_person).sort(
     (a, b) => new Date(a) - new Date(b)
   );
@@ -135,8 +137,7 @@ const AnalyticsPage = ({ token }) => {
     ],
   };
 
-  // Texts per Time of Day (PST) Bar Chart:
-  // analyticsData.message_count_by_hour is an object with keys like "00", "01", etc.
+  // Texts per Time of Day (PST):
   const timeLabels = Object.keys(analyticsData.message_count_by_hour);
   const sortedTimeLabels = timeLabels.sort((a, b) => parseInt(a) - parseInt(b));
   const timeCounts = sortedTimeLabels.map(
@@ -153,55 +154,9 @@ const AnalyticsPage = ({ token }) => {
     ],
   };
 
-  // const validWords = analyticsData.word_frequency.filter(
-  //   ([word, count]) => word && count > 0
-  // );
-  // const wordCloudLabels = validWords.map(([word]) => word);
-  // const wordCloudCounts = validWords.map(([, count]) => count);
-
-  // const wordCloudData = {
-  //   labels: wordCloudLabels,
-  //   datasets: [
-  //     {
-  //       label: "Word Frequency",
-  //       data: wordCloudCounts,
-  //       backgroundColor: "rgba(255, 99, 132, 0.6)",
-  //     },
-  //   ],
-  // };
-
-  // const wordCloudOptions = {
-  //   responsive: true,
-  //   plugins: {
-  //     legend: { display: false },
-  //   },
-  //   elements: {
-  //     word: {
-  //       fontSize: (ctx) => {
-  //         // Ensure a minimum font size so that words are always visible
-  //         const size = ctx.raw;
-  //         return Math.max(size * 0.5 + 10, 14);
-  //       },
-  //       rotation: () => Math.random() * 60 - 30,
-  //       padding: 2,
-  //     },
-  //   },
-  // };
-  console.log(emojiData)
-
   return (
     <Container className="lovey-dashboard my-4">
       <h2 className="lovey-header mb-4">💖 Our Message Memories 💖</h2>
-
-      {/* Word Cloud Section
-      <Card className="lovey-card mb-4">
-        <Card.Header>💬 Our Most Used Words 💬</Card.Header>
-        <Card.Body>
-          <div style={{ width: "100%", height: "350px" }}>
-            <Chart type="wordCloud" data={wordCloudData} options={wordCloudOptions} />
-          </div>
-        </Card.Body>
-      </Card>*/}
 
       <Row>
         <Col md={6} className="mb-4">
@@ -241,33 +196,32 @@ const AnalyticsPage = ({ token }) => {
 
       <Row>
         <Col md={6} className="mb-4">
-          <Card className="lovey-card">
-            <Card.Header>Emoji Frequency</Card.Header>
-            <Card.Body>
-              {/* Wrap the chart in a container that scrolls if there are many bars */}
-              <div style={{ height: "600px", overflowY: "scroll" }}>
-                <Bar
-                  data={emojiData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    // Use horizontal bars instead of vertical ones
-                    indexAxis: "y",
-                    plugins: {
-                      legend: { display: false },
-                    },
-                    scales: {
-                      // Optionally disable auto-skipping for tick labels so that all labels show
-                      x: { ticks: { autoSkip: false } },
-                      y: { ticks: { autoSkip: false } },
-                    },
-                  }}
-                />
-              </div>
-            </Card.Body>
-          </Card>
+<Card className="lovey-card">
+  <Card.Header>Emoji Frequency</Card.Header>
+  <Card.Body>
+    {/* Outer container fixes the visible height and allows scrolling */}
+    <div style={{ height: "600px", overflowY: "auto", border: "1px solid #ddd" }}>
+      {/* Inner container is sized to the desired chart height */}
+      <div style={{ height: `${emojiLabels.length * 25}px` }}>
+        <Bar
+          data={emojiData}
+          options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: "y",
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { autoSkip: false } },
+              y: { ticks: { autoSkip: false } },
+            },
+          }}
+        />
+      </div>
+    </div>
+  </Card.Body>
+</Card>
         </Col>
-        {/* Word Frequency Bar Chart */}
+        {/* Word Frequency Bar Chart (to update later) */}
         <Col md={6} className="mb-4">
           <Card className="lovey-card">
             <Card.Header>Word Frequency</Card.Header>
@@ -284,7 +238,6 @@ const AnalyticsPage = ({ token }) => {
         </Col>
       </Row>
 
-      {/* Message Frequency Line Chart */}
       <Card className="lovey-card mb-4">
         <Card.Header>Message Frequency per Day (Nadia & Stephen)</Card.Header>
         <Card.Body>
@@ -301,7 +254,6 @@ const AnalyticsPage = ({ token }) => {
         </Card.Body>
       </Card>
 
-      {/* Texts per Time of Day (PST) */}
       <Card className="lovey-card mb-4">
         <Card.Header>Texts per Time of Day (PST)</Card.Header>
         <Card.Body>
