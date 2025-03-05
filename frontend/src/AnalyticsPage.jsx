@@ -118,9 +118,11 @@ const AnalyticsPage = () => {
   return (
     <Container className="lovey-dashboard my-4">
       <h2 className="lovey-header mb-4">
-        💖 Analytics Dashboard 💖
+        💖 Our Message Memories 💖
       </h2>
 
+      <Row>
+        <Col md={6} className="mb-4">
       {/* Totals Section */}
       <Card className="lovey-card mb-4">
         <Card.Header>Totals</Card.Header>
@@ -143,7 +145,8 @@ const AnalyticsPage = () => {
           </Row>
         </Card.Body>
       </Card>
-
+          </Col>
+        <Col md={6} className="mb-4">
       {/* Pie Chart Section */}
       <Card className="lovey-card mb-4">
         <Card.Header>Who Sent More Messages?</Card.Header>
@@ -151,6 +154,8 @@ const AnalyticsPage = () => {
           <Pie data={pieData} />
         </Card.Body>
       </Card>
+        </Col>
+        </Row>
 
       <Row>
         {/* Emoji Frequency Bar Chart */}
