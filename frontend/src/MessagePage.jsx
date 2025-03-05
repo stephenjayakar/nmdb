@@ -5,6 +5,7 @@ import { api } from "./convex/_generated/api";
 import { Button, Spinner } from "react-bootstrap";
 import SearchBarDatePicker from "./SearchBarDatePicker";
 
+// A helper for formatting timestamps.
 const formatTimestamp = (timestamp) => {
   try {
     const date = new Date(timestamp);
@@ -21,23 +22,23 @@ const formatTimestamp = (timestamp) => {
   }
 };
 
-const MessagePage = ({ token }) => {
+const MessagePage = ({ token, currentView }) => {
   const convex = useConvex();
   const [messages, setMessages] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef(null);
-  // "stephen" or "nadia" view determines which side is sender.
-  const [currentView, setCurrentView] = useState("stephen");
 
   const timelineBounds = useQuery(api.messages.timelineBounds, { token });
   const initialMessages = useQuery(api.messages.getInitialMessages, { token });
 
+  // When the initial messages load, store them.
   useEffect(() => {
     if (initialMessages) {
       setMessages(initialMessages);
     }
   }, [initialMessages]);
 
+  // Set up the infinite scroll observer.
   useEffect(() => {
     const observer = new IntersectionObserver(
       async (entries) => {
@@ -50,11 +51,9 @@ const MessagePage = ({ token }) => {
       },
       { threshold: 0.1 }
     );
-
     if (observerRef.current) {
       observer.observe(observerRef.current);
     }
-
     return () => observer.disconnect();
   }, [messages, isLoadingMore]);
 
@@ -98,60 +97,42 @@ const MessagePage = ({ token }) => {
     reloadWithTimestamp(date);
   };
 
-  // Toggle between "stephen" and "nadia" view.
-  const toggleView = () => {
-    setCurrentView((prev) => (prev === "stephen" ? "nadia" : "stephen"));
-  };
-
   return (
     <div className="container">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          {/* Toggle View Button */}
-          <div className="d-flex justify-content-end mb-3">
-            <Button variant="outline-secondary" onClick={toggleView}>
-              Switch to {currentView === "stephen" ? "Nadia" : "Stephen"} View
-            </Button>
-          </div>
-          {/* Search Bar & Date Picker */}
-          <SearchBarDatePicker
-            onSearch={handleSearch}
-            onDateChange={handleDateChange}
-          />
-          {!messages ? (
-            <div className="text-center my-5">
-              <Spinner animation="border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            </div>
-          ) : (
-            <>
-              <Button variant="primary" onClick={loadOlder} className="mb-3">
-                Load more
-              </Button>
-              <MessageList
-                messages={messages}
-                onTimestampClick={reloadWithTimestamp}
-                currentView={currentView}
-              />
-              <div ref={observerRef} style={{ height: "20px" }}>
-                {isLoadingMore && (
-                  <div className="text-center">
-                    <Spinner animation="border" size="sm" />
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+      <SearchBarDatePicker
+        onSearch={handleSearch}
+        onDateChange={handleDateChange}
+      />
+      {!messages || messages.length === 0 ? (
+        <div className="text-center my-5">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
         </div>
-      </div>
+      ) : (
+        <>
+          <Button variant="primary" onClick={loadOlder} className="mb-3">
+            Load more
+          </Button>
+          <MessageList
+            messages={messages}
+            onTimestampClick={reloadWithTimestamp}
+            currentView={currentView}
+          />
+          <div ref={observerRef} style={{ height: "20px" }}>
+            {isLoadingMore && (
+              <div className="text-center">
+                <Spinner animation="border" size="sm" />
+              </div>
+            )}
+          </div>
+        </>
+      )}
       {timelineBounds && (
         <Timeline
           minDate={timelineBounds[0]}
           maxDate={timelineBounds[1]}
-          onDateSelect={(date) =>
-            reloadWithTimestamp(date.toISOString())
-          }
+          onDateSelect={(date) => reloadWithTimestamp(date.toISOString())}
         />
       )}
     </div>
@@ -161,7 +142,7 @@ const MessagePage = ({ token }) => {
 const MessageList = ({ messages, onTimestampClick, currentView }) => {
   if (!messages.length) return null;
 
-  // Updated function: now accepts a second parameter (isSender) and adds inline styling.
+  // Converts any links in the text into clickable links.
   const makeLinksClickable = (text, isSender) => {
     const linkColor = isSender ? "#ffffff" : "#007bff";
     const linkStyle = `color: ${linkColor}; text-decoration: underline;`;
@@ -171,9 +152,8 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
     );
   };
 
-  // Chat bubble styles.
   const senderStyle = {
-    backgroundColor: "#007aff", // blue bubble
+    backgroundColor: "#007aff",
     color: "white",
     borderRadius: "20px",
     padding: "10px 15px",
@@ -183,7 +163,7 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
   };
 
   const receiverStyle = {
-    backgroundColor: "#e5e5ea", // grey bubble
+    backgroundColor: "#e5e5ea",
     color: "black",
     borderRadius: "20px",
     padding: "10px 15px",
@@ -207,13 +187,11 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
             }}
           >
             <div style={bubbleStyle}>
-              {/* Message content with clickable links */}
               <div
                 dangerouslySetInnerHTML={{
                   __html: makeLinksClickable(msg.message, isSender),
                 }}
               />
-              {/* Timestamp */}
               <div className="text-end mt-1" style={{ fontSize: "0.8em" }}>
                 <a
                   href="#"

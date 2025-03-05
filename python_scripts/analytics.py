@@ -1,5 +1,7 @@
 from message import load_messages_from_merged
 import sys
+import collections
+import re
 
 
 def find_time_gaps(messages, min_gap_days=1):
@@ -37,10 +39,44 @@ def find_large_messages(messages, min_length=500):
         print()
     return large_messages
 
+def calculate_word_frequencies(messages, top_n=10):
+    """Calculate word frequencies from messages, using only ASCII words, and return the top N most frequent words."""
+    word_counter = collections.Counter()
+    ascii_pattern = re.compile(r'\b[a-zA-Z]+\b')  # Matches words with only ASCII letters
+
+    for msg in messages:
+        if '[' in msg.message and ']' in msg.message:
+            continue
+        if 'http' in msg.message:
+            continue
+        # Normalize text to lower case
+        text = msg.message.lower()
+        # Find all ASCII words
+        words = ascii_pattern.findall(text)
+        word_counter.update(words)
+
+    return word_counter
+
+
+def most_common(word_counter, top_n=10):
+    # Get the most common words
+    most_common_words = word_counter.most_common(top_n)
+    for word, count in most_common_words:
+        print(f"{word}: {count}")
+
+    return most_common_words
 
 argument = sys.argv[1]
 messages = load_messages_from_merged()
+frequencies = calculate_word_frequencies(messages)
 if argument == "gap":
     gaps = find_time_gaps(messages)
 elif argument == "large":
     find_large_messages(messages)
+elif argument == 'top':
+    most_common(frequencies, 100)
+elif argument == 'write-freq':
+    sorted_frequencies = list(sorted(frequencies.items(), key=lambda x: -x[1]))
+    with open('frequencies.csv', 'w') as f:
+        for word, count in sorted_frequencies:
+            f.write(f'{word},{count}\n')

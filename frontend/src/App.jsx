@@ -1,23 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import MessagePage from "./MessagePage";
-
-import { useQuery, useConvex } from "convex/react";
-import { api } from "./convex/_generated/api";
-
-const EmptyState = ({ searchActive }) => (
-  <div className="empty-state">
-    {searchActive ? (
-      <p>No messages found matching your search criteria.</p>
-    ) : (
-      <p>Select a date or search for messages to begin.</p>
-    )}
-  </div>
-);
+import AnalyticsPage from "./AnalyticsPage";
 
 function App() {
   const [token, setToken] = useState("");
   const [inputValue, setInputValue] = useState("");
+  // Lifted state for view (“stephen” or “nadia”)
+  const [currentView, setCurrentView] = useState("stephen");
+  // Lifted state for whether to show the analytics vs messages
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
@@ -45,6 +37,14 @@ function App() {
     setInputValue("");
   };
 
+  const toggleView = () => {
+    setCurrentView((prev) => (prev === "stephen" ? "nadia" : "stephen"));
+  };
+
+  const toggleAnalytics = () => {
+    setShowAnalytics((prev) => !prev);
+  };
+
   return token ? (
     <div className="App">
       <button
@@ -53,7 +53,23 @@ function App() {
       >
         Logout
       </button>
-      <MessagePage token={token} />
+      <div className="d-flex justify-content-end mb-3" style={{ gap: "10px" }}>
+        <button onClick={toggleAnalytics} className="button">
+          {showAnalytics ? "View Messages" : "View Analytics"}
+        </button>
+        {/* Only show the view toggle button when in messages view */}
+        {!showAnalytics && (
+          <button onClick={toggleView} className="button button-outline">
+            Switch to {currentView === "stephen" ? "Nadia" : "Stephen"} View
+          </button>
+        )}
+      </div>
+      {/* Render AnalyticsPage or MessagePage based on toggle */}
+      {showAnalytics ? (
+        <AnalyticsPage token={token} />
+      ) : (
+        <MessagePage token={token} currentView={currentView} />
+      )}
     </div>
   ) : (
     <div className="auth-container">
