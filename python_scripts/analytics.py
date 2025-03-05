@@ -2,81 +2,126 @@ from message import load_messages_from_merged
 import sys
 import collections
 import re
+from datetime import datetime
+import emoji
 
+skip_word_list = [
+    '[',
+    ']',
+    'http',
+]
 
-def find_time_gaps(messages, min_gap_days=1):
-    """Find gaps in conversation that are longer than min_gap_days.
-    Returns list of tuples (last_message, next_message, gap_in_days)"""
+def total_word_count(messages):
+    ascii_pattern = re.compile(r'\b[a-zA-Z]+\b') 
+    total = 0
+    for msg in messages:
+        if any(skip in msg.message for skip in skip_word_list):
+            continue
+        words = ascii_pattern.findall(msg.message)
+        total += len(words)
+    print(f"Total words: {total}")
+    return total
+
+def message_counts(messages):
+    total = len(messages)
+    nadia = sum(1 for msg in messages if msg.sender.lower() == 'nadia')
+    stephen = sum(1 for msg in messages if msg.sender.lower() == 'stephen')
+    print(f"Total messages: {total}")
+    print(f"Nadia messages: {nadia}")
+    print(f"Stephen messages: {stephen}")
+    return total, nadia, stephen
+
+def num_days(messages):
     if not messages:
-        return []
+        return 0
+    dates = {msg.timestamp.date() for msg in messages}
+    num = len(dates)
+    print(f"Distinct days chatted: {num}")
+    return num
 
-    # Sort messages by timestamp
-    sorted_msgs = sorted(messages, key=lambda x: x.timestamp)
-    gaps = []
+def messages_per_day(messages):
+    days = num_days(messages)
+    total_msgs = len(messages)
+    rate = total_msgs / days if days else 0
+    print(f"Avg. messages per day: {rate:.2f}")
+    return rate
 
-    for i in range(len(sorted_msgs) - 1):
-        current_msg = sorted_msgs[i]
-        next_msg = sorted_msgs[i + 1]
-
-        time_diff = next_msg.timestamp - current_msg.timestamp
-        gap_days = time_diff.total_seconds() / (24 * 3600)
-
-        if gap_days > min_gap_days:
-            gaps.append((current_msg, next_msg, gap_days))
-
-    gaps.sort(key=lambda x: x[2])
-    for g in gaps:
-        print(g[0].timestamp, g[2])
-    return gaps
-
-
-def find_large_messages(messages, min_length=500):
-    """Find messages that are longer than min_length characters"""
-    large_messages = [msg for msg in messages if len(msg.message) > min_length]
-    large_messages.sort(key=lambda x: -len(x.message))
-    for m in large_messages:
-        print(m)
-        print()
-    return large_messages
-
-def calculate_word_frequencies(messages, top_n=10):
-    """Calculate word frequencies from messages, using only ASCII words, and return the top N most frequent words."""
-    word_counter = collections.Counter()
-    ascii_pattern = re.compile(r'\b[a-zA-Z]+\b')  # Matches words with only ASCII letters
+def emoji_frequency(messages):
+    emoji_counter = collections.Counter()
 
     for msg in messages:
-        if '[' in msg.message and ']' in msg.message:
+        emojis_found = emoji.emoji_list(msg.message)
+        emoji_counter.update([e['emoji'] for e in emojis_found])
+
+    common_emojis = emoji_counter.most_common(10)
+    print("Most common emojis:")
+    for e, count in common_emojis:
+        print(f"{e}: {count}")
+    return common_emojis
+
+def calculate_word_frequencies(messages, top_n=10):
+    word_counter = collections.Counter()
+    ascii_pattern = re.compile(r'\b[a-zA-Z]+\b')
+
+    for msg in messages:
+        if any(skip in msg.message for skip in skip_word_list):
             continue
-        if 'http' in msg.message:
-            continue
-        # Normalize text to lower case
         text = msg.message.lower()
-        # Find all ASCII words
         words = ascii_pattern.findall(text)
         word_counter.update(words)
 
-    return word_counter
-
-
-def most_common(word_counter, top_n=10):
-    # Get the most common words
     most_common_words = word_counter.most_common(top_n)
+    print("Most common words:")
     for word, count in most_common_words:
         print(f"{word}: {count}")
 
     return most_common_words
 
+def message_frequency_per_day_per_person(messages):
+    freq = collections.defaultdict(lambda: collections.Counter())
+    for msg in messages:
+        day = msg.timestamp.date()
+        person = msg.sender.lower()
+        freq[day][person] += 1
+
+    print("Message frequency per day per person (sample):")
+    for day in sorted(freq)[:5]:  # only show first 5 days as sample
+        print(f"{day}: {dict(freq[day])}")
+    return freq
+
+def message_count_by_hour(messages):
+    hour_freq = collections.Counter()
+    for msg in messages:
+        hour = msg.timestamp.hour
+        hour_freq[hour] += 1
+
+    print("Messages per hour:")
+    for hour, count in sorted(hour_freq.items()):
+        print(f"{hour:02d}:00 - {count} messages")
+    return hour_freq
+
 argument = sys.argv[1]
 messages = load_messages_from_merged()
-frequencies = calculate_word_frequencies(messages)
-if argument == "gap":
-    gaps = find_time_gaps(messages)
-elif argument == "large":
-    find_large_messages(messages)
-elif argument == 'top':
-    most_common(frequencies, 100)
-elif argument == 'write-freq':
-    sorted_frequencies = list(sorted(frequencies.items(), key=lambda x: -x[1]))
-    with open('frequencies.csv', 'w') as f:
-        for word, count in sorted_frequencies:
-            f.write(f'{word},{count}\n')
+
+if argument == "totals":
+    total_word_count(messages)
+    message_counts(messages)
+    num_days(messages)
+    messages_per_day(messages)
+elif argument == "emoji":
+    emoji_frequency(messages)
+elif argument == "words":
+    calculate_word_frequencies(messages, top_n=20)
+elif argument == "person-day":
+    message_frequency_per_day_per_person(messages)
+elif argument == "hour":
+    message_count_by_hour(messages)
+elif argument == "all":
+    total_word_count(messages)
+    message_counts(messages)
+    num_days(messages)
+    messages_per_day(messages)
+    emoji_frequency(messages)
+    calculate_word_frequencies(messages)
+    message_frequency_per_day_per_person(messages)
+    message_count_by_hour(messages)
