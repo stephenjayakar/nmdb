@@ -115,8 +115,9 @@ def write_to_json(messages: List[Message], json_filename: str):
         json.dump([m.to_dict() for m in messages], f, indent=2)
 
 
-def main():
-    filename = sys.argv[1]
+def main(filename=None):
+    if filename is None:
+        filename = sys.argv[1]
     filepath = f"../data_sources/{filename}.txt"
     json_filename = f"../output/{filename}.json"
 
