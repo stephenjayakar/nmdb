@@ -12,6 +12,8 @@ You have to have `merged.jsonl`; then you run `analytics.py`, and then upload `a
 
 # Other stuff
 
+You can just run `import-imessage.py`
+
 * So you first run `imessage-exporter -f txt`
 * Then you copy in the txt files that are appropriate as well as a sender.csv (this is already set up)
 * Then you run the script
