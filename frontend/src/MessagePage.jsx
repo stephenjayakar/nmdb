@@ -116,8 +116,37 @@ const MessagePage = ({ token, currentView }) => {
     reloadWithTimestamp(date);
   };
 
-  const setFavorite = (messageID, isFavorite) => {
-    setFavoriteMutation({ token, messageID, isFavorite });
+  const setFavorite = async (messageID, isFavorite) => {
+    // Store the current scroll position
+    const scrollPosition = window.scrollY;
+    
+    await setFavoriteMutation({ token, messageID, isFavorite });
+    
+    // If we're in search mode, refresh the search results
+    if (isSearchActive && searchBarRef.current) {
+      try {
+        const currentSearch = searchBarRef.current.getCurrentSearch?.();
+        if (currentSearch) {
+          const newMessages = await convex.query(api.messages.fasterSearch, {
+            token,
+            searchTerm: currentSearch,
+          });
+          setMessages(newMessages);
+        }
+      } catch (e) {
+        // If getCurrentSearch is not available, just refresh the current search
+        const newMessages = await convex.query(api.messages.fasterSearch, {
+          token,
+          searchTerm: "",  // Empty search to get initial messages
+        });
+        setMessages(newMessages);
+      }
+    }
+
+    // Restore scroll position after the state update
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollPosition);
+    });
   }
 
   return (

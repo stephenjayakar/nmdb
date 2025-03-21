@@ -5,11 +5,14 @@ const SearchBarDatePicker = forwardRef(({ onSearch, onDateChange }, ref) => {
   const [searchText, setSearchText] = useState("");
   const [date, setDate] = useState("");
 
-  // Expose a clear method so the parent can clear the search bar.
+  // Expose methods so the parent can interact with the search bar
   useImperativeHandle(ref, () => ({
     clearSearch: () => {
       setSearchText("");
     },
+    getCurrentSearch: () => {
+      return searchText;
+    }
   }));
 
   const handleSearchChange = (e) => {
