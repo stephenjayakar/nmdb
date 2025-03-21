@@ -9,7 +9,7 @@ export const setFavorite = mutation({
         isFavorite: v.boolean(),
     },
     handler: async (ctx, args) => {
-        if (!await authCheck(ctx, args.token)) {
+        if (!(await authCheck(ctx, args.token))) {
             return;
         }
         const favorites = await ctx.db.query("favorites").first();
@@ -42,10 +42,33 @@ export const getFavorites = query({
     token: v.string(),
   },
   handler: async (ctx, args) => {
-    if (!await authCheck(ctx, args.token)) {
+    if (!(await authCheck(ctx, args.token))) {
       return [];
     }
     const favorites = await ctx.db.query("favorites").first();
     return favorites?.favoriteList ?? [];
   }
 });
+
+export const getFavoriteMessages = query({
+    args: {
+      token: v.string(),
+    },
+    handler: async (ctx, args) => {
+        if (!(await authCheck(ctx, args.token))) {
+            return [];
+        }
+        const favorites = await ctx.db.query("favorites").first();
+        const favoritesList = favorites?.favoriteList ?? [];
+        const favoriteMessages = await Promise.all(
+            favoritesList.map(async (messageID) => {
+                return await ctx.db.query("messages").withIndex("by_sj_id", (q) =>
+                    q.eq("id", messageID)).first();
+            })
+        );
+
+        favoriteMessages.sort(((a, b) => a!.timestamp.localeCompare(b!.timestamp)));
+
+        return favoriteMessages;
+    }
+})

@@ -12,7 +12,8 @@ export default defineSchema({
     .searchIndex("search_message", {
       searchField: "message",
     })
-    .index("by_timestamp", ["timestamp"]),
+    .index("by_timestamp", ["timestamp"])
+    .index("by_sj_id", ["id"]),
   sessions: defineTable({
     token: v.string(),
   }),
