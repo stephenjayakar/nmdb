@@ -13,6 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as favorites from "../favorites.js";
 import type * as messages from "../messages.js";
 import type * as session from "../session.js";
 
@@ -25,6 +26,7 @@ import type * as session from "../session.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  favorites: typeof favorites;
   messages: typeof messages;
   session: typeof session;
 }>;

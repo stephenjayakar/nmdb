@@ -10,7 +10,7 @@ export const timelineBounds = query({
     token: v.string()
   },
   handler: async (ctx, args) => {
-    if (!authCheck(ctx, args.token)) {
+    if (!await authCheck(ctx, args.token)) {
       return [];
     }
 
@@ -35,7 +35,7 @@ export const fasterSearch = query({
     searchTerm: v.string(),
   },
   handler: async (ctx, args) => {
-    if (!authCheck(ctx, args.token)) {
+    if (!await authCheck(ctx, args.token)) {
       return [];
     }
 
@@ -61,7 +61,7 @@ export const getMessagesAroundDate = query({
     direction: v.string(),
   },
   handler: async (ctx, args) => {
-    if (!authCheck(ctx, args.token)) {
+    if (!await authCheck(ctx, args.token)) {
       return [];
     }
 
@@ -85,7 +85,7 @@ export const getInitialMessages = query({
     token: v.string(),
   },
   handler: async (ctx, args) => {
-    if (!authCheck(ctx, args.token)) {
+    if (!await authCheck(ctx, args.token)) {
       return [];
     }
 
@@ -100,7 +100,7 @@ export const reloadMessages = query({
     timestamp: v.string(),
   },
   handler: async (ctx, args) => {
-    if (!authCheck(ctx, args.token)) {
+    if (!await authCheck(ctx, args.token)) {
       return [];
     }
     const messages = await ctx.db.query("messages")
@@ -114,7 +114,7 @@ export const getAnalytics = query({
     token: v.string(),
   },
   handler: async (ctx, args) => {
-    if (!authCheck(ctx, args.token)) {
+    if (!await authCheck(ctx, args.token)) {
       return [];
     }
     return await ctx.db.query("analytics").first();

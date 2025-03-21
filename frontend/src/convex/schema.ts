@@ -16,4 +16,7 @@ export default defineSchema({
   sessions: defineTable({
     token: v.string(),
   }),
+  favorites: defineTable({
+    favoriteList: v.array(v.string())
+  })
 });
