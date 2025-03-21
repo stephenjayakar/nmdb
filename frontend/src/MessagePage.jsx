@@ -26,23 +26,26 @@ const MessagePage = ({ token, currentView }) => {
   const [messages, setMessages] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [isFavoritesMode, setIsFavoritesMode] = useState(false);
   const observerRef = useRef(null);
-  // Create a ref for SearchBarDatePicker
   const searchBarRef = useRef(null);
 
   const timelineBounds = useQuery(api.messages.timelineBounds, { token });
   const initialMessages = useQuery(api.messages.getInitialMessages, { token });
+  const favoriteMessages = useQuery(api.favorites.getFavoriteMessages, { token });
   const favorites = useQuery(api.favorites.getFavorites, { token }) ?? [];
   const setFavoriteMutation = useMutation(api.favorites.setFavorite);
 
   useEffect(() => {
-    if (initialMessages) {
+    if (isFavoritesMode && favoriteMessages) {
+      setMessages(favoriteMessages);
+    } else if (initialMessages) {
       setMessages(initialMessages);
     }
-  }, [initialMessages]);
+  }, [initialMessages, favoriteMessages, isFavoritesMode]);
 
   useEffect(() => {
-    if (isSearchActive) return; // Do not set up the scroll observer when searching
+    if (isSearchActive || isFavoritesMode) return; // Do not set up the scroll observer when searching or in favorites mode
 
     const observer = new IntersectionObserver(
       async (entries) => {
@@ -61,7 +64,7 @@ const MessagePage = ({ token, currentView }) => {
     }
 
     return () => observer.disconnect();
-  }, [messages, isLoadingMore, isSearchActive]);
+  }, [messages, isLoadingMore, isSearchActive, isFavoritesMode]);
 
   const loadOlder = async () => {
     const minTS = messages[0].timestamp;
@@ -118,11 +121,13 @@ const MessagePage = ({ token, currentView }) => {
 
   return (
     <div className="container">
-      <SearchBarDatePicker
-        ref={searchBarRef}
-        onSearch={handleSearch}
-        onDateChange={handleDateChange}
-      />
+      {!isFavoritesMode && (
+        <SearchBarDatePicker
+          ref={searchBarRef}
+          onSearch={handleSearch}
+          onDateChange={handleDateChange}
+        />
+      )}
       {!messages || messages.length === 0 ? (
         <div className="text-center my-5">
           <Spinner animation="border" role="status">
@@ -131,11 +136,30 @@ const MessagePage = ({ token, currentView }) => {
         </div>
       ) : (
         <>
-          {/* Only render the Load More button if not searching */}
-          {!isSearchActive && (
-            <Button variant="primary" onClick={loadOlder} className="mb-3">
-              Load more
-            </Button>
+          {/* Only render the buttons if not searching and not in favorites mode */}
+          {!isSearchActive && !isFavoritesMode && (
+            <div className="d-flex gap-2 mb-3">
+              <Button variant="primary" onClick={loadOlder}>
+                Load more
+              </Button>
+              <Button 
+                variant="outline-warning"
+                onClick={() => setIsFavoritesMode(true)}
+              >
+                ★ Show Favorites
+              </Button>
+            </div>
+          )}
+          {/* Show "Show All Messages" button when in favorites mode */}
+          {isFavoritesMode && (
+            <div className="d-flex gap-2 mb-3">
+              <Button 
+                variant="warning"
+                onClick={() => setIsFavoritesMode(false)}
+              >
+                ★ Show All Messages
+              </Button>
+            </div>
           )}
           <MessageList
             messages={messages}
@@ -153,7 +177,7 @@ const MessagePage = ({ token, currentView }) => {
           </div>
         </>
       )}
-      {timelineBounds && (
+      {timelineBounds && !isFavoritesMode && (
         <Timeline
           minDate={timelineBounds[0]}
           maxDate={timelineBounds[1]}
