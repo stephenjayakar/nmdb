@@ -201,11 +201,24 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
             }}
           >
             <div style={bubbleStyle}>
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: makeLinksClickable(msg.message, isSender),
-                }}
-              />
+              <div className="d-flex justify-content-between align-items-start">
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: makeLinksClickable(msg.message, isSender),
+                  }}
+                />
+                <button
+                  onClick={() => console.log('Message ID:', msg.id)}
+                  className="btn btn-link p-0 ms-2"
+                  style={{
+                    color: isSender ? 'white' : 'gray',
+                    textDecoration: 'none',
+                    fontSize: '1.2em'
+                  }}
+                >
+                  ☆
+                </button>
+              </div>
               <div className="text-end mt-1" style={{ fontSize: "0.8em" }}>
                 <a
                   href="#"
