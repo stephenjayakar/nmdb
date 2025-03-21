@@ -1,4 +1,5 @@
-from imessage_old import Message, get_senders
+from message import Message
+from imessage_old import get_senders
 
 import json
 import datetime
@@ -26,8 +27,15 @@ def parse_messenger_json(messenger_dict):
         sender = message_dict["senderName"]
         sender = sender.split(' ')[0]
 
+        # This is pretty arbitrary
+        message_id = 'messenger-' + str(message_dict["timestamp"])
         timestamp = unix_to_local_timestamp(message_dict["timestamp"])
-        messages.append(Message(sender, content, timestamp))
+        messages.append(Message(
+            sender,
+            content,
+            timestamp,
+            message_id,
+        ))
 
     messages.sort(key=lambda m: m.timestamp)
     return messages

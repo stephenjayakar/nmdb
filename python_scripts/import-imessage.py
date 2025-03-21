@@ -1,9 +1,14 @@
 import os
 import shutil
-import imessage
+import imessage_json
 import merge
+import imessage
 
 senders_map = imessage.load_senders_map("../data_sources/senders.csv")
+
+not_me_senders = [k.strip('+') for k in senders_map.keys() if k not in ('Me', '@me')]
+
+EXPORT_COMMAND = f'''imessage-exporter -f json -t "{','.join(not_me_senders)}"'''
 
 def imessage_export():
     receivers = []
@@ -29,7 +34,9 @@ def imessage_export():
     else:
         print(f"Directory does not exist: {directory_to_remove}")
 
-    os.system('imessage-exporter -f txt')
+    print(EXPORT_COMMAND)
+    os.system(EXPORT_COMMAND)
+    return
 
 
     for i in range(1, 3):
@@ -53,8 +60,7 @@ def imessage_export():
 
 
 imessage_export()
-imessage.main('1')
-imessage.main('2')
+imessage_json.main()
 merge.main()
 command = (
     'cd ../frontend && '

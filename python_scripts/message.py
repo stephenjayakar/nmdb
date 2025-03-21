@@ -1,14 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import base64
 import hashlib
 import json
+from typing import Optional
 
 @dataclass
 class Message:
     sender: str
     message: str
     timestamp: datetime
+    message_id: Optional[str] = field(default=None)
 
     def __repr__(self):
         return f'{self.timestamp} {self.sender}: {self.message}'
@@ -28,10 +30,10 @@ class Message:
 
     # Dict that's used for JSON serialization
     def to_dict(self):
-        b64_hash = base64.b64encode(self.hash()).decode()
+        message_id = self.message_id if self.message_id else base64.b64encode(self.hash()).decode()
 
         return {
-            "id": b64_hash,
+            "id": message_id,
             "message": self.message,
             "sender": self.sender,
             "timestamp": str(self.timestamp),

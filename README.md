@@ -2,8 +2,13 @@
 
 ### Getting the `jsonl` to upload
 
+Automatic
+* Run `import-imessage.py`
+  * It also imports messenger stuff, though doesn't convert it.
+
+Manual:
 1. Get messenger export (json) & imessage export (txt)
-2. You have to run `imessage.py` and `messenger.py`
+2. You have to run `imessage_json.py` and `messenger.py`
 3. Then run `merge.py`
 
 ### Getting analytics
