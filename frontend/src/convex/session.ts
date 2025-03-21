@@ -1,8 +1,14 @@
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+const N = 40;
 
-// export const validateSession = query({
-//   args: { token: v.string() },
-//   handler: async (ctx, args) => {
-//     await ctx.db.query("sessions").filter((q) => q.eq(q.field("token"), args.token)).first() != null
-//   }});
+const authCheck = async (ctx: any, token: string) => {
+    const tokenExists =
+      (await ctx.db
+        .query("sessions")
+       .filter((q: any) => q.eq(q.field("token"), token))
+        .first()) != null;
+    if (!tokenExists) {
+      return [];
+    }
+};
+
+export default authCheck;
