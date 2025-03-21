@@ -88,11 +88,12 @@ const MessagePage = ({ token, currentView }) => {
 
   // When reloading by timestamp (from date selection or message click), we also want to clear the search.
   const reloadWithTimestamp = async (ts) => {
-    // If a date is clicked or timestamp is selected, clear the search bar.
+    // If a date is clicked or timestamp is selected, clear the search bar and exit favorites mode
     if (searchBarRef.current) {
       searchBarRef.current.clearSearch();
     }
     setIsSearchActive(false);
+    setIsFavoritesMode(false);
     const newMessages = await convex.query(api.messages.reloadMessages, {
       token,
       timestamp: ts,
@@ -128,11 +129,27 @@ const MessagePage = ({ token, currentView }) => {
           onDateChange={handleDateChange}
         />
       )}
-      {!messages || messages.length === 0 ? (
+      {!messages ? (
         <div className="text-center my-5">
           <Spinner animation="border" role="status">
             <span className="visually-hidden">Loading...</span>
           </Spinner>
+        </div>
+      ) : messages.length === 0 ? (
+        <div className="text-center my-5">
+          {isFavoritesMode ? (
+            <div>
+              <p className="mb-3">No favorite messages yet. Click the star on any message to add it to favorites!</p>
+              <Button 
+                variant="warning"
+                onClick={() => setIsFavoritesMode(false)}
+              >
+                ★ Show All Messages
+              </Button>
+            </div>
+          ) : (
+            <p>No messages found.</p>
+          )}
         </div>
       ) : (
         <>
