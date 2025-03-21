@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Timeline from "./Timeline";
-import { useQuery, useConvex } from "convex/react";
+import { useQuery, useConvex, useMutation } from "convex/react";
 import { api } from "./convex/_generated/api";
 import { Button, Spinner } from "react-bootstrap";
 import SearchBarDatePicker from "./SearchBarDatePicker";
@@ -32,6 +32,8 @@ const MessagePage = ({ token, currentView }) => {
 
   const timelineBounds = useQuery(api.messages.timelineBounds, { token });
   const initialMessages = useQuery(api.messages.getInitialMessages, { token });
+  const favorites = useQuery(api.favorites.getFavorites, { token }) ?? [];
+  const setFavoriteMutation = useMutation(api.favorites.setFavorite);
 
   useEffect(() => {
     if (initialMessages) {
@@ -110,6 +112,10 @@ const MessagePage = ({ token, currentView }) => {
     reloadWithTimestamp(date);
   };
 
+  const setFavorite = (messageID, isFavorite) => {
+    setFavoriteMutation({ token, messageID, isFavorite });
+  }
+
   return (
     <div className="container">
       <SearchBarDatePicker
@@ -135,6 +141,8 @@ const MessagePage = ({ token, currentView }) => {
             messages={messages}
             onTimestampClick={reloadWithTimestamp}
             currentView={currentView}
+            favorites={favorites}
+            setFavorite={setFavorite}
           />
           <div ref={observerRef} style={{ height: "20px" }}>
             {isLoadingMore && (
@@ -156,7 +164,7 @@ const MessagePage = ({ token, currentView }) => {
   );
 };
 
-const MessageList = ({ messages, onTimestampClick, currentView }) => {
+const MessageList = ({ messages, onTimestampClick, currentView, favorites, setFavorite }) => {
   if (!messages.length) return null;
 
   const makeLinksClickable = (text, isSender) => {
@@ -191,6 +199,7 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
       {messages.map((msg) => {
         const isSender = msg.sender.toLowerCase() === currentView;
         const bubbleStyle = isSender ? senderStyle : receiverStyle;
+        const isFavorite = favorites.includes(msg.id);
         return (
           <div
             key={msg._id}
@@ -208,15 +217,15 @@ const MessageList = ({ messages, onTimestampClick, currentView }) => {
                   }}
                 />
                 <button
-                  onClick={() => console.log('Message ID:', msg.id)}
+                  onClick={() => setFavorite(msg.id, !isFavorite)}
                   className="btn btn-link p-0 ms-2"
                   style={{
-                    color: isSender ? 'white' : 'gray',
+                    color: isFavorite ? '#FFD700' : (isSender ? 'white' : 'gray'),
                     textDecoration: 'none',
                     fontSize: '1.2em'
                   }}
                 >
-                  ☆
+                  {isFavorite ? '★' : '☆'}
                 </button>
               </div>
               <div className="text-end mt-1" style={{ fontSize: "0.8em" }}>

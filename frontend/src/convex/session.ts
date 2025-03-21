@@ -6,7 +6,6 @@ const authCheck = async (ctx: any, token: string) => {
         .query("sessions")
        .filter((q: any) => q.eq(q.field("token"), token))
         .first()) != null;
-    console.log(tokenExists)
     return tokenExists;
 };
 
